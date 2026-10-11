@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة المعلمة | التقنية الرقمية 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css">
+</head>
+<body class="dash">
+<!-- ===================================================================
+     لوحة المعلمة — الفهرس الكامل للكتاب ومتابعة التقدّم
+     • بيانات الكتاب والدروس: lesson-index.json (ونسخته js/lesson-data.js)
+     • حالة الشرح تُحفظ في هذا المتصفح (localStorage)
+     =================================================================== -->
+<div class="wrap">
+
+  <header class="d-head">
+    <div class="d-logo" aria-hidden="true">📘</div>
+    <div>
+      <h1 id="bookTitle">التقنية الرقمية 3</h1>
+      <p id="bookMeta"></p>
+      <p id="teacherLine" style="font-weight:800;color:var(--dt-pd)"></p>
+      <p class="d-note" id="storageNote"></p>
+    </div>
+  </header>
+
+  <nav class="d-actions" aria-label="أوامر سريعة">
+    <a class="btn primary" href="classroom.html" style="background:linear-gradient(135deg,#14B8A6,#0F766E)">🏫 الإدارة الصفية</a>
+    <button class="btn primary" id="aCurrent">▶ متابعة الدرس الحالي</button>
+    <button class="btn" id="aNext">⏭ الانتقال إلى الدرس التالي</button>
+    <button class="btn" id="aLast">↩ مراجعة آخر درس مكتمل</button>
+    <button class="btn" id="aAll">📚 عرض جميع الدروس</button>
+    <button class="btn" id="aExcel" style="border-color:#16A34A;color:#166534">📊 تصدير Excel (الدروس والطالبات)</button>
+  </nav>
+  <div class="d-more">
+    <button class="btn sm quiet" id="aExport">📝 تصدير ملف متابعة التقدم (Markdown)</button>
+    <button class="btn sm quiet" id="aBackup" title="تشمل تقدّم الشرح والبيانات الصفية">💾 نسخة احتياطية شاملة (JSON)</button>
+    <button class="btn sm quiet" id="aRestore">📂 استعادة نسخة احتياطية</button>
+    <button class="btn sm quiet" id="aReset">↺ تصفير حالة الشرح</button>
+    <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+  </div>
+
+  <section class="d-pos" aria-label="موقعي في الكتاب">
+    <article class="card pos" style="--c:#8B5CF6"><h3>◐ الدرس الحالي (قيد الشرح)</h3><div class="t" id="pCur"></div><div class="s" id="pCurS"></div></article>
+    <article class="card pos" style="--c:#10B981"><h3>☑ آخر درس مكتمل</h3><div class="t" id="pLast"></div><div class="s" id="pLastS"></div></article>
+    <article class="card pos" style="--c:#F59E0B"><h3>⏭ الدرس التالي للشرح</h3><div class="t" id="pNext"></div><div class="s" id="pNextS"></div></article>
+  </section>
+
+  <section class="d-stats d-stats4" aria-label="إحصاءات">
+    <div class="card stat"><b id="sTotal">0</b><span>📚 دروس الكتاب</span></div>
+    <div class="card stat"><b id="sTaught">0</b><span>☑ تم شرحها</span></div>
+    <div class="card stat"><b id="sDoing">0</b><span>◐ قيد الشرح</span></div>
+    <div class="card stat"><b id="sLeft">0</b><span>☐ لم تُشرح بعد</span></div>
+  </section>
+  <section class="card d-bars" aria-label="التقدّم العام">
+    <div class="bar-row"><span>📖 تقدّم الشرح</span><div class="track" role="progressbar" aria-label="تقدّم الشرح" id="bTeachT"><i id="bTeach"></i></div><span class="pct" id="bTeachP"></span></div>
+  </section>
+
+  <section id="index" aria-labelledby="indexTitle">
+    <div class="d-index-head">
+      <h2 id="indexTitle">📚 فهرس الكتاب</h2>
+      <button class="btn sm quiet" id="aTopics">▾ إظهار موضوعات كل الدروس</button>
+    </div>
+    <div id="units"></div>
+  </section>
+
+  <footer class="d-foot">
+    • تُحفظ حالة الشرح والبيانات الصفية في حسابك وتتزامن تلقائيًا بين أجهزتك (حالة الحفظ في زر ☁️ أسفل الصفحة). «💾 نسخة احتياطية» تحفظ نسخة إضافية على جهازك.<br>
+    • فتح الدرس لا يغيّر حالته؛ استخدمي أزرار الحالة هنا أو زر «تم شرح الدرس ✓» داخل الدرس.
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/cloud-config.js"></script>
+<script src="js/cloud-sync.js"></script>
+<script src="js/lesson-data.js"></script>
+<script src="js/progress-manager.js"></script>
+<script src="js/xlsx-writer.js"></script>
+<script src="js/classroom-manager.js"></script>
+<script>
+  // أول فتح للوحة: صفحة إعداد بيانات المعلمة والفصل قبل أي شيء
+  if (window.Classroom && Classroom.needsSetup() && (!window.Cloud || Cloud.signedIn())) location.replace("classroom.html#setup");
+</script>
+<script>
+(function(){
+  "use strict";
+  var P = window.Progress, I = P.index;
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+  var AR = function(n){ return String(n).replace(/\d/g, function(d){ return "٠١٢٣٤٥٦٧٨٩"[d]; }); };
+  var full = function(v){ return v.type === "lesson" ? v.unitLabel + " • " + v.label + ": " + v.title : v.title; };
+  var showTopics = false;
+
+  P.applySyncFromURL();   // a lesson may have sent its latest status in the link
+
+  function toast(msg, err){
+    var t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
+    clearTimeout(toast.t); toast.t = setTimeout(function(){ t.className = "toast" + (err ? " err" : ""); }, 3600);
+  }
+  function lessonURL(v){ return P.withSync(v.file, v.id); }
+  function open(v){
+    if (!v || !P.canOpen(v)) { toast("هذا الدرس غير متاح", true); return; }
+    window.location.href = lessonURL(v);
+  }
+  function setStatus(id, status){
+    var v = P.get(id); if (!v || v.teaching === status) return;
+    if (v.teaching === "completed" && !confirm("الدرس «" + v.title + "» مسجَّل «تم الشرح».\nهل تريدين تغيير حالته إلى «" + P.TEACH[status].ar + "»؟")) return;
+    var r = P.setTeaching(id, status);
+    render();
+    toast(r && r.saved ? "تم حفظ الحالة: " + P.TEACH[status].icon + " " + P.TEACH[status].ar : "⚠️ تعذّر الحفظ الدائم في هذا المتصفح — ستضيع الحالة عند إغلاق الصفحة", !(r && r.saved));
+  }
+
+  function render(){
+    var all = P.all(), s = P.stats(all), cur = P.current(), last = P.lastCompleted(), nx = P.next();
+
+    $("#bookTitle").textContent = I.textbookTitle;
+    $("#bookMeta").textContent = I.stage + " • " + I.grade + " • " + I.edition;
+    var pr = window.Classroom && Classroom.data().profile;
+    $("#teacherLine").textContent = pr && pr.teacher ? "👩‍🏫 " + pr.teacher + (pr.school ? " • 🏫 " + pr.school : "") : "";
+    var sn = $("#storageNote");
+    if (window.Cloud && Cloud.enabled) { sn.className = "d-note"; sn.textContent = "☁️ كل البيانات محفوظة في حسابك وتظهر على أي جهاز تدخلين منه."; }
+    else if (P.storageOK()) { sn.className = "d-note"; sn.textContent = "💾 التقدّم محفوظ في هذا المتصفح."; }
+    else { sn.className = "d-note warn"; sn.textContent = "⚠️ هذا المتصفح لا يسمح بالحفظ الدائم هنا — صدّري نسخة احتياطية قبل إغلاق الصفحة، أو افتحي اللوحة في Google Chrome أو Microsoft Edge."; }
+
+    // موقعي في الكتاب
+    $("#pCur").textContent = cur ? full(cur) : "لا يوجد درس قيد الشرح";
+    $("#pCurS").textContent = cur ? "بدأتِ في: " + P.fmtDate(cur.startedAt) : "يُحدَّد عند اختيار «◐ قيد الشرح» لأي درس.";
+    $("#pLast").textContent = last ? full(last) : "لم يُشرح أي درس بعد";
+    $("#pLastS").textContent = last ? "اكتمل في: " + P.fmtDate(last.completedAt) : "";
+    var ns = $("#pNextS"); ns.className = "s";
+    if (!nx.lesson) {
+      $("#pNext").textContent = s.teaching ? "لا توجد دروس جديدة — أكملي الدرس الجاري" : "🎉 تم شرح الكتاب كاملًا";
+      ns.textContent = s.teaching ? "" : "يمكنك مراجعة أي درس من الفهرس.";
+    } else {
+      $("#pNext").textContent = full(nx.lesson);
+      ns.textContent = "صفحات الكتاب " + AR(nx.lesson.pages.from) + "–" + AR(nx.lesson.pages.to);
+    }
+
+    // الأزرار
+    $("#aCurrent").disabled = !cur;
+    $("#aCurrent").title = cur ? "فتح: " + cur.title : "لا يوجد درس قيد الشرح";
+    $("#aLast").disabled = !(last && P.canOpen(last));
+    $("#aNext").disabled = !(nx.lesson && P.canOpen(nx.lesson));
+
+    // الإحصاءات
+    $("#sTotal").textContent = AR(s.total); $("#sTaught").textContent = AR(s.taught); $("#sDoing").textContent = AR(s.teaching); $("#sLeft").textContent = AR(s.notTaught);
+    $("#bTeach").style.width = s.teachPct + "%"; $("#bTeachP").textContent = s.teachPct + "%"; $("#bTeachT").setAttribute("aria-valuenow", s.teachPct);
+
+    // الفهرس
+    $("#units").innerHTML = P.units().map(function(u){
+      var us = u.stats;
+      return '<section class="card unit" id="' + u.id + '"><div class="unit-h"><span class="ul">' + esc(u.label) + '</span><h3>' + esc(u.title) +
+        '</h3><div class="up"><span>تم شرح ' + AR(us.taught) + ' من ' + AR(us.total) + '</span><div class="track" role="progressbar" aria-label="تقدّم ' + esc(u.title) + '" aria-valuenow="' + us.teachPct + '"><i style="width:' + us.teachPct + '%"></i></div><span>ص ' + AR(u.pages.from) + '–' + AR(u.pages.to) + '</span></div></div>' +
+        u.lessons.map(function(v){
+          var isNext = nx.lesson && nx.lesson.id === v.id, isCur = cur && cur.id === v.id;
+          var openBtn = P.canOpen(v)
+            ? '<a class="btn sm primary" href="' + esc(lessonURL(v)) + '">▶ فتح الدرس</a>'
+            : '<span class="btn sm disabled" aria-disabled="true">▶ فتح الدرس</span>';
+          return '<div class="lsn' + (isNext ? ' next' : '') + (isCur ? ' cur' : '') + '"><div class="num">' + AR(v.number) + '</div><div>' +
+            '<div class="lt">' + esc(v.title) + '<small>' + esc(v.type === "lesson" ? v.label : v.type === "section" ? "قسم" : "تقويم ختامي") + '</small></div>' +
+            '<div class="meta"><span>📄 ص ' + AR(v.pages.from) + '–' + AR(v.pages.to) + '</span>' +
+              '<span class="badge t-' + v.teaching + '">' + P.TEACH[v.teaching].icon + ' ' + P.TEACH[v.teaching].ar + '</span>' +
+              (isCur ? '<span class="flag cur">◐ الدرس الحالي</span>' : '') + (isNext ? '<span class="flag">⏭ التالي</span>' : '') +
+              (v.completedAt && v.teaching === "completed" ? '<span>✓ ' + esc(P.fmtDate(v.completedAt)) + '</span>' : '') + '</div>' +
+            '<details' + (showTopics ? ' open' : '') + '><summary>موضوعات الدرس (' + AR(v.topics.length) + ')</summary><ol class="topics">' +
+              v.topics.map(function(t){ return '<li>' + esc(t.title) + ' <span>ص ' + AR(t.page) + '</span></li>'; }).join("") + '</ol></details></div>' +
+            '<div class="side"><div class="seg" role="group" aria-label="حالة الشرح: ' + esc(v.title) + '">' +
+              ["not_taught","in_progress","completed"].map(function(k){
+                return '<button data-id="' + v.id + '" data-st="' + k + '" aria-pressed="' + (v.teaching === k) + '">' + P.TEACH[k].icon + ' ' + P.TEACH[k].ar + '</button>';
+              }).join("") + '</div>' + openBtn + '</div></div>';
+        }).join("") + '</section>';
+    }).join("");
+  }
+
+  // ---------- أحداث ----------
+  $("#units").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-st]"); if (b) setStatus(b.dataset.id, b.dataset.st);
+  });
+  $("#aCurrent").onclick = function(){ open(P.current()); };
+  $("#aLast").onclick = function(){ open(P.lastCompleted()); };
+  $("#aNext").onclick = function(){
+    var nx = P.next();
+    if (!nx.lesson) return toast("لا يوجد درس تالٍ");
+    open(nx.lesson);
+  };
+  $("#aAll").onclick = function(){ $("#index").scrollIntoView({ behavior: "smooth" }); };
+  $("#aTopics").onclick = function(){
+    showTopics = !showTopics; this.textContent = showTopics ? "▴ إخفاء موضوعات الدروس" : "▾ إظهار موضوعات كل الدروس"; render();
+  };
+  $("#aExport").onclick = function(){
+    try { P.download(P.exportMarkdown(), "progress-tracker.md", "text/markdown"); toast("📝 تم إنشاء الملف progress-tracker.md — تحققي من مجلد التنزيلات"); }
+    catch (e) { toast("⚠️ تعذّر التصدير: " + e.message, true); }
+  };
+  $("#aExcel").onclick = function(){
+    if (!window.XLSX || !window.Classroom) return toast("⚠️ تعذّر تحميل أداة Excel", true);
+    try {
+      var head = ["م","الوحدة","الدرس","الصفحات","حالة الشرح","تاريخ البدء","تاريخ الانتهاء"];
+      var h = Classroom.sheetHeader("متابعة شرح دروس " + I.textbookTitle, "", head.length);
+      var day = function(iso){ return iso ? new Date(iso).toLocaleDateString("en-GB") : ""; };
+      var rows = h.rows.concat([head.map(function(x){ return { v:x, s:"head" }; })]);
+      P.all().forEach(function(v){
+        rows.push([{v:v.number,s:"cell"},{v:v.unitLabel+": "+v.unitTitle,s:"note"},{v:(v.type==="lesson"?v.label+": ":"")+v.title,s:"name"},
+          {v:v.pages.from+"–"+v.pages.to,s:"cell"},{v:P.TEACH[v.teaching].ar,s:v.teaching==="completed"?"good":v.teaching==="in_progress"?"warn":"cell"},
+          {v:day(v.startedAt),s:"cell"},{v:day(v.completedAt),s:"cell"}]);
+      });
+      var s = P.stats();
+      rows.push([{v:"",s:"total"},{v:"",s:"total"},{v:"تم شرح "+s.taught+" من "+s.total,s:"total"},{v:"",s:"total"},{v:s.teachPct,s:"total"},{v:"",s:"total"},{v:"",s:"total"}]);
+      var sheets = [{ name:"متابعة الدروس", rows:rows, merges:h.merges, freezeRows:5, cols:[5,32,40,10,14,14,14] }].concat(Classroom.excelSheets(null));
+      var pr = Classroom.data().profile || {};
+      XLSX.download(sheets, ("تقرير المعلمة" + (pr.school ? " - " + pr.school : "") + " - " + new Date().toISOString().slice(0,10) + ".xlsx").replace(/[\\/:*?"<>|]+/g,"-"));
+      toast("📊 تم إنشاء ملف Excel — تحققي من مجلد التنزيلات");
+    } catch (e) { toast("⚠️ تعذّر إنشاء الملف: " + e.message, true); }
+  };
+  $("#aBackup").onclick = function(){
+    try {
+      var b = JSON.parse(P.exportBackup());
+      if (window.Classroom) b.classroom = Classroom.exportData();   // نسخة واحدة تشمل تقدّم الشرح والبيانات الصفية
+      P.download(JSON.stringify(b, null, 2), "backup-" + new Date().toISOString().slice(0,10) + ".json", "application/json");
+      toast("💾 تم إنشاء النسخة الاحتياطية — تحققي من مجلد التنزيلات");
+    }
+    catch (e) { toast("⚠️ تعذّر إنشاء النسخة: " + e.message, true); }
+  };
+  $("#aRestore").onclick = function(){ $("#restoreFile").click(); };
+  $("#restoreFile").onchange = function(e){
+    var f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    if (!confirm("ستحلّ النسخة الاحتياطية محلّ البيانات الحالية في هذا المتصفح (تقدّم الشرح و/أو البيانات الصفية). متابعة؟")) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      try {
+        var o = JSON.parse(rd.result), msg = [], ok = true;
+        if (o.data || o.lessons) { var r = P.importBackup(rd.result); ok = r.saved; msg.push("تقدّم الشرح (" + AR(r.count) + ")"); }
+        if (o.classroom && window.Classroom) { ok = Classroom.importData(o.classroom) && ok; msg.push("البيانات الصفية"); }
+        if (!msg.length) throw new Error("لا يحتوي الملف على بيانات معروفة");
+        render(); toast(ok ? "📂 تمت استعادة: " + msg.join(" و") : "⚠️ استُعيدت البيانات لكن تعذّر حفظها دائمًا", !ok);
+      }
+      catch (err) { toast("⚠️ الملف غير صالح: " + err.message, true); }
+    };
+    rd.onerror = function(){ toast("⚠️ تعذّرت قراءة الملف", true); };
+    rd.readAsText(f);
+  };
+  $("#aReset").onclick = function(){
+    if (!confirm("تصفير حالة الشرح لجميع الدروس؟ (لا يمكن التراجع إلا من نسخة احتياطية)")) return;
+    P.resetAll(); render(); toast("↺ تم تصفير حالة الشرح");
+  };
+  window.addEventListener("storage", function(e){ if (e.key === P.KEY) render(); });   // a lesson tab changed something
+  window.addEventListener("pageshow", render);                                      // coming back with the Back button
+  render();
+})();
+</script>
+</body>
+</html>

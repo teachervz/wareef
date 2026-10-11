@@ -1,0 +1,5 @@
+# student data — never published
+students.xlsx
+*.xlsx
+*.docx
+.DS_Store

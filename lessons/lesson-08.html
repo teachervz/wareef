@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بناء تطبيقات الهاتف الذكي | عرض تفاعلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/lesson-engine.css">
+</head>
+<body>
+<script>
+/* ==========================================================================
+   ✏️ محتوى الدرس — الوحدة الثالثة • الدرس الثاني: بناء تطبيقات الهاتف الذكي (الكتاب ص ١٢٠–١٣٨)
+   ========================================================================== */
+const LESSON = {
+  subject : "تقنية رقمية ٣",
+  unit    : "الوحدة الثالثة",
+  number  : "الدرس الثاني",
+  title   : "بناء تطبيقات الهاتف الذكي"
+};
+
+/* شاشة «النصائح» كما تظهر بعد تشغيل التطبيق */
+const TIPS_PHONE = `<div class="ph" style="height:330px;width:250px;margin:auto"><div class="ph-bar">النصائح</div>
+  <div class="ph-screen" style="background:#2E7D32;align-items:center;justify-content:center">
+  <div class="ph-lbl" style="color:#fff;font-weight:800">أهمية وجبة الإفطار.</div>
+  <div class="ph-lbl" style="color:#fff;font-weight:800">اشربي الماء بانتظام.</div>
+  <div class="ph-lbl" style="color:#fff;font-weight:800">مارسي الرياضة يوميًا.</div></div></div>`;
+
+const SLIDES = [
+
+  { type:"prep", anim:"zoom", tag:"🌸 التحضير",
+    greeting:"أهلًا بمطوّرات التطبيقات!",
+    sub:"اليوم نبني تطبيقنا الأول بأيدينا 📱✨",
+    rules:["👂 أُنصت باهتمام","✋ أرفع يدي للمشاركة","🤝 أتعاون مع مجموعتي","💻 أطبّق بنفسي"] },
+
+  { type:"flip", anim:"slide", tag:"🔁 مراجعة الدرس السابق",
+    title:"تذكّري… مقدمة عن تطبيقات الهواتف",
+    note:"اسألي الطالبات أولًا ثم اقلبي البطاقة 👆",
+    cards:[
+      {icon:"🧩", front:"البرنامج التطبيقي", back:"برنامج يؤدي مهمة محددة للمستخدم", ex:"تطبيقات الهاتف نوع منه"},
+      {icon:"🔢", front:"مراحل الإنشاء",    back:"التخطيط والتصميم ← التطوير ← الاختبار ← النشر والتسويق", ex:"٤ مراحل"},
+      {icon:"🎨", front:"واجهة المستخدم",   back:"ما يراه المستخدم ويتفاعل معه: ألوان وصور وأزرار وتسميات", ex:"UI"},
+      {icon:"🛠️", front:"App Inventor",     back:"يُنشئ التطبيقات باللبنات دون كتابة المقطع البرمجي", ex:"من معهد MIT"} ],
+    bridgeBtn:"🔗 اربطي بدرس اليوم",
+    bridge:"عرفنا المراحل… واليوم نطبّقها: <b>نخطّط</b> و<b>نصمّم</b> و<b>نبرمج</b> و<b>نختبر</b> تطبيق «الغذاء الصحي» 🥗" },
+
+  { type:"predict", anim:"fade", tag:"🔮 التهيئة • ماذا تتوقعين؟",
+    title:"تطبيق الغذاء الصحي 🥗",
+    icon:"📱",
+    scenario:"سنبني تطبيقًا فيه <b>تصنيفات الطعام</b> وأمثلة على الأطعمة الصحية وفوائدها، وشاشة <b>نصائح صحية</b> تُفتح عند الضغط على زر.",
+    question:"ما الذي سنحتاجه لبناء الشاشة الأولى؟ 🤔",
+    answers:[ {icon:"🔘",text:"زر مكتوب عليه «نصائح صحية»"},
+              {icon:"🖼️",text:"صورة خلفية تجعل الشاشة جذابة"},
+              {icon:"📄",text:"شاشة ثانية تعرض النصائح"},
+              {icon:"🧩",text:"لبنة تفتح الشاشة الثانية عند الضغط"} ],
+    revealBtn:"🔮 اكشفي توقّعًا",
+    conclusion:"💡 سنصمّم الواجهة في صفحة <b>Designer</b> ونبرمجها في صفحة <b>Blocks</b>" },
+
+  { type:"title", anim:"zoom",
+    sub:"من التخطيط… إلى تطبيق يعمل على هاتفك 📱",
+    icons:["📱","🔘","🖼️","🧩","📲","🥗"],
+    note:"📝 سجّلي عنوان الدرس في دفترك" },
+
+  { type:"list", anim:"slide", tag:"🎯 أهداف الدرس",
+    title:"في نهاية الدرس ستكونين قادرة على:",
+    items:[ {icon:"✏️",text:"تحديد خطوات التخطيط والتصميم للتطبيق"},
+            {icon:"🆕",text:"إنشاء مشروع جديد في مطوّر التطبيقات MIT"},
+            {icon:"🧭",text:"التعرّف على بيئة العمل: Designer و Blocks"},
+            {icon:"🔘",text:"إضافة المكوّنات وتغيير خصائصها"},
+            {icon:"🧩",text:"برمجة زر يفتح شاشة جديدة"},
+            {icon:"📲",text:"اختبار التطبيق بالمصاحب أو المحاكي"} ] },
+
+  { type:"cards", anim:"slide", tag:"✏️ أولًا: التخطيط والتصميم",
+    title:"قبل أن نفتح البرنامج…",
+    intro:"التخطيط الجيد يبدأ بخطوات عديدة منها:",
+    cols:4,
+    cards:[ {icon:"💡",title:"فكرة التطبيق",text:"تصنيفات الطعام الصحي وفوائدها ونصائح للحياة الصحية"},
+            {icon:"🎯",title:"أهداف التطبيق",text:"مساعدة المستخدم على اختيار غذاء صحي"},
+            {icon:"👥",title:"الفئة المستهدفة",text:"من يستخدم التطبيق؟ مثل الطلاب والأسر"},
+            {icon:"✏️",title:"الشكل المبدئي",text:"رسم الشاشات يدويًا وكيف ترتبط ببعضها"} ] },
+
+  { type:"order", anim:"slide", tag:"🛠️ ثانيًا: التطوير",
+    title:"بدء مشروع في مطوّر التطبيقات MIT",
+    question:"رتّبي خطوات إنشاء مشروع جديد:",
+    steps:[ {icon:"🌐",label:"افتحي الموقع",desc:"appinventor.mit.edu"},
+            {icon:"🚀",label:"Create Apps!",desc:"إنشاء تطبيقات"},
+            {icon:"🔑",label:"تسجيل الدخول",desc:"بحساب جوجل وقبول الشروط"},
+            {icon:"🆕",label:"مشروع جديد",desc:"Start new project"},
+            {icon:"🔤",label:"اسم المشروع",desc:"بالإنجليزية ثم OK"} ] },
+
+  { type:"cards", anim:"slide", tag:"🧭 بيئة العمل",
+    title:"واجهة مطوّر التطبيقات MIT",
+    intro:"صفحتان: <b>Designer</b> نصمّم فيها الواجهة • <b>Blocks</b> نبرمج فيها المكوّنات",
+    cols:3,
+    cards:[ {icon:"🧰",title:"Palette",text:"الأدوات المستخدمة في إعداد واجهة المستخدم (User Interface)"},
+            {icon:"📱",title:"Viewer",text:"شاشة العرض: مساحة العمل لإضافة الأدوات ومعاينتها"},
+            {icon:"🌳",title:"Components",text:"قائمة بجميع العناصر المستخدمة في المشروع"},
+            {icon:"⚙️",title:"Properties",text:"الخصائص: لتغيير خصائص العناصر المضافة إلى الشاشة"},
+            {icon:"🎨",title:"زر Designer",text:"التبديل إلى صفحة التصميم"},
+            {icon:"🧩",title:"زر Blocks",text:"التبديل إلى صفحة اللبنات للبرمجة"} ] },
+
+  { type:"match", anim:"slide", tag:"🔗 طابقي",
+    title:"المكوّنات الأكثر استخدامًا",
+    question:"اضغطي على المكوّن، ثم على وصفه المناسب",
+    pairs:[ {a:"🔘 زر أمر Button", b:"يقوم بمهمة محددة عند ضغطه"},
+            {a:"🖼️ صورة Image", b:"مكوّن خاص يعرض الصور"},
+            {a:"🔤 أداة التسمية Label", b:"تعرض نصًا يُكتب في خاصية Text"},
+            {a:"📋 منتقي القائمة ListPicker", b:"يُضغط لعرض عدة خيارات نصية للاختيار منها"},
+            {a:"↕️ الترتيب العمودي VerticalArrangement", b:"يعرض العناصر من أعلى إلى أسفل"} ] },
+
+  { type:"designer", anim:"zoom", tag:"🎨 صفحة Designer",
+    title:"صمّمي الشاشة الرئيسة",
+    palette:["Button","Label","Image"],
+    missions:[ {text:"اكتبي عنوان Screen1: <b>Home</b>", test:"title", value:"Home"},
+               {text:"أضيفي زرًا Button", test:"has", value:"Button"},
+               {text:"أعيدي تسمية الزر: <b>Tips</b>", test:"name", value:"Tips"},
+               {text:"اكتبي على الزر: <b>نصائح صحية</b>", test:"text", value:"نصائح صحية"},
+               {text:"اجعلي خط الزر غامقًا FontBold", test:"bold", value:"Button"},
+               {text:"وسّطي المحتوى: AlignHorizontal ← Center", test:"align", value:"center"},
+               {text:"وسّطي عموديًا: AlignVertical ← Center", test:"valign", value:"center"},
+               {text:"أضيفي صورة خلفية BackgroundImage", test:"bgImage"},
+               {text:"غيّري BackgroundColor للشاشة", test:"screenBg"} ] },
+
+  { type:"mcq", anim:"fade", tag:"❓ اختاري الإجابة الصحيحة",
+    title:"شاشة جديدة: Add Screen",
+    icon:"📄",
+    question:"أردنا إضافة شاشة النصائح. أيّ اسم <b>صحيح</b> للشاشة؟",
+    options:[ {text:"2Screen"}, {text:"شاشة_النصائح"}, {text:"Tips_Screen"}, {text:"Tips Screen"} ],
+    correct:2,
+    explain:"📄 اسم الشاشة بالإنجليزية فقط، يبدأ بحرف لا برقم، ويحتوي على حروف وأرقام وتسطير سفلي فقط (بلا مسافات)" },
+
+  { type:"mcq", anim:"fade", tag:"❓ اختاري الإجابة الصحيحة",
+    title:"ترتيب النصائح",
+    icon:"↕️",
+    question:"لعرض النصائح في شاشة «النصائح» من <b>أعلى إلى أسفل</b> نستخدم مكوّن:",
+    options:[ {text:"HorizontalArrangement"}, {text:"VerticalArrangement"}, {text:"ListPicker"}, {text:"Image"} ],
+    correct:1,
+    explain:"↕️ نضيف VerticalArrangement من مجموعة Layout، ثم نسحب داخله أداة Label لكل نصيحة، ونغيّر TextColor إلى White" },
+
+  { type:"cards", anim:"slide", tag:"📄 شاشة النصائح",
+    title:"تصميم الشاشة الثانية Screen2",
+    intro:"Add Screen ← اسمها <b>Screen2</b> ← Title: <b>النصائح</b>، ثم:",
+    cols:4,
+    cards:[ {icon:"↕️",title:"VerticalArrangement",text:"AlignHorizontal: Center 3 • AlignVertical: Center 2 • BackgroundColor: None"},
+            {icon:"🔤",title:"Label لكل نصيحة",text:"Text: «أهمية وجبة الإفطار.» • TextColor: White • TextAlignment: Center 1"},
+            {icon:"🖼️",title:"خلفية الشاشة",text:"أضيفي صورة خلفية لجعلها أكثر جاذبية كما في Screen1"},
+            {icon:"✍️",title:"علامة الوقف",text:"تظهر النقطة يمين النص العربي في المصمّم، وتعود لمكانها الصحيح عند التشغيل"} ] },
+
+  { type:"cards", anim:"slide", tag:"🧩 صفحة Blocks",
+    title:"بيئة صفحة اللبنات",
+    intro:"اللبنات قطع نربطها لنُبلغ التطبيق بما يفعل؛ لكل مكوّن أحداث وطرق وخصائص. نختار Screen1 ثم زر <b>Blocks</b>:",
+    cols:3,
+    cards:[ {icon:"🧱",title:"مجموعة اللبنات",text:"Built-in: Control و Logic و Text و Lists و Variables…"},
+            {icon:"📱",title:"مكوّنات Screen1",text:"لبنات خاصة بكل مكوّن أضفناه في الواجهة"},
+            {icon:"🧩",title:"منطقة البرمجة",text:"Viewer: نسحب اللبنات إليها ونربطها"},
+            {icon:"🎒",title:"الحقيبة Backpack",text:"نخزّن فيها اللبنات لنصل إليها بسرعة"},
+            {icon:"🗑️",title:"السلة",text:"نحذف اللبنة بسحبها وإفلاتها في السلة"},
+            {icon:"🔍",title:"العرض",text:"التكبير والتصغير وطريقة العرض الافتراضية"} ] },
+
+  { type:"blocks", anim:"zoom", tag:"🧩 صفحة Blocks",
+    title:"برمجي زر النصائح",
+    question:"عند الضغط على زر <b>Tips</b> تُفتح الشاشة الثانية <b>Screen2</b>. اضغطي اللبنات بالترتيب الصحيح:",
+    lines:[ {t:"when Tips .Click", c:"event"},
+            {t:"do  open another screen  screenName", c:"control", ind:1, hint:"ماذا يحدث عند الضغط؟ نفتح شاشة… (من قسم Control)"},
+            {t:"\"Screen2\"", c:"text", ind:2, hint:"أيّ شاشة نفتح؟"} ],
+    distractors:[ {t:"when Foods .AfterPicking", c:"event"}, {t:"\"Home\"", c:"text"}, {t:"initialize global name to", c:"var"} ],
+    doneMsg:"أحسنتِ! 👏 الآن اضغطي «تشغيل التطبيق»",
+    result:TIPS_PHONE },
+
+  { type:"flip", anim:"zoom", tag:"🧪 ثالثًا: اختبار التطبيق",
+    title:"طريقتان لاختبار التطبيق",
+    note:"اقلبي البطاقتين 👆",
+    cols:2,
+    cards:[
+      {icon:"📲", front:"مصاحب الذكاء الاصطناعي", back:"AI Companion: تطبيق على هاتفك الفعلي تمسح به رمز QR (أو تُدخل الرمز) فيظهر تطبيقك على الهاتف", ex:"Connect ← AI Companion"},
+      {icon:"🖥️", front:"المحاكي Emulator", back:"برنامج يُثبّت على جهاز الحاسب ويحاكي جهاز الهاتف الذكي؛ يجب تشغيله قبل الاتصال", ex:"Connect ← Emulator"} ],
+    bridgeBtn:"⚠️ تنبيه مهم",
+    bridge:"عند إغلاق مطوّر التطبيقات <b>يُزال</b> التطبيق من المصاحب؛ لذلك عليكِ <b>تثبيته</b> على هاتفك لكي يُحفظ" },
+
+  { type:"order", anim:"slide", tag:"📲 رتّبي",
+    title:"تشغيل التطبيق بمصاحب الذكاء الاصطناعي",
+    question:"رتّبي خطوات توصيل التطبيق بالهاتف:",
+    steps:[ {icon:"🔌",label:"Connect",desc:"من القائمة العلوية"},
+            {icon:"🤖",label:"AI Companion",desc:"يظهر رمز QR ورمز الكود"},
+            {icon:"📷",label:"امسحي الرمز",desc:"من تطبيق المصاحب في الهاتف"},
+            {icon:"⏳",label:"انتظري",desc:"حتى تظهر الشاشة التي أنشأتِها"},
+            {icon:"👆",label:"جرّبي الزر",desc:"اضغطي لعرض الشاشة الثانية"} ] },
+
+  { type:"tf", anim:"slide", tag:"✔️✖️ صح أم خطأ",
+    title:"صح أم خطأ؟",
+    items:[ {text:"يمكنك تحميل صورة من جهاز الحاسب لاستخدامها كخلفية للشاشة.", answer:true},
+            {text:"لاختبار تطبيقك على جهاز أندرويد عليك تثبيت تطبيق المصاحب MIT AI Companion عليه.", answer:true},
+            {text:"لعرض التطبيق على هاتفك اضغطي «اتصال» ثم اختاري «مصاحب الذكاء الاصطناعي».", answer:true},
+            {text:"يمكن أن يبدأ اسم الشاشة برقم مثل 2Tips.", answer:false, fix:"يبدأ اسم الشاشة بحرف ولا يقبل الأرقام في البداية"},
+            {text:"يبقى التطبيق في المصاحب بعد إغلاق مطوّر التطبيقات دون الحاجة إلى تثبيته.", answer:false, fix:"يُزال عند الإغلاق؛ يجب تثبيته على الهاتف لكي يُحفظ"} ] },
+
+  { type:"groups", anim:"slide", tag:"🤝 التعلم التعاوني",
+    title:"تطبيق البلد الذي تريدين زيارته 🌍",
+    scenario:"نفّذن تدريب ٢ (ص ١٣٨) في مطوّر التطبيقات MIT، كل مجموعة تتولى جزءًا:",
+    minutes:10,
+    groups:[ {icon:"🏠",name:"الشاشة الرئيسة",color:"#6C3FD1",task:"سمّين الشاشة «Home» وأضفن صورة خلفية"},
+             {icon:"🔘",name:"الأزرار",color:"#14B8A6",task:"زرّان: Sightseeing (معالم المدينة) و Useful Information (معلومات مفيدة)"},
+             {icon:"📄",name:"الشاشة الثانية",color:"#F59E0B",task:"شاشة جديدة فيها VerticalArrangement وتسميات لمعلومات مفيدة"},
+             {icon:"🧪",name:"الاختبار",color:"#EC4899",task:"برمجن الزر ليفتح الشاشة، واختبرن التطبيق بالمصاحب أو المحاكي"} ],
+    teamwork:["💡 يعزز الإبداع","🧩 يمزج نقاط القوة","🤝 يبني الثقة","💜 يعزز الانتماء"] },
+
+  { type:"review", anim:"zoom", tag:"🧭 مراجعة",
+    title:"خريطة الدرس — اضغطي على كل فرع",
+    center:"بناء تطبيقات الهاتف الذكي",
+    branches:[ {icon:"✏️",label:"التخطيط",points:"الفكرة • الأهداف • الفئة المستهدفة • الشكل المبدئي يدويًا"},
+               {icon:"🧭",label:"بيئة العمل",points:"Palette • Viewer • Components • Properties • Designer و Blocks"},
+               {icon:"🔘",label:"المكوّنات",points:"Button • Image • Label • ListPicker • VerticalArrangement"},
+               {icon:"⚙️",label:"الخصائص",points:"Title • Text • FontBold • BackgroundColor • AlignHorizontal"},
+               {icon:"🧩",label:"البرمجة",points:"when Tips.Click ← open another screen \"Screen2\""},
+               {icon:"🧪",label:"الاختبار",points:"مصاحب الذكاء الاصطناعي (QR) أو المحاكي Emulator"} ] },
+
+  { type:"exit", anim:"fade", tag:"⚡ التقييم الفوري",
+    title:"كيف تقيّمين مهارتك في مطوّر التطبيقات؟",
+    levels:[ {emoji:"🤩",label:"أستطيع وحدي"}, {emoji:"🙂",label:"أحتاج قليلًا من المساعدة"}, {emoji:"🤔",label:"أحتاج تدريبًا أكثر"} ],
+    ticket:{ title:"🎟️ بطاقة الخروج ٣-٢-١",
+             items:["<b>٣</b> مكوّنات استخدمتها اليوم","<b>٢</b> خاصيتان غيّرتهما","<b>١</b> طريقة لاختبار التطبيق"] } },
+
+  { type:"closing", anim:"zoom",
+    emoji:"🏆",
+    title:"تطبيقك الأول يعمل! 🌟",
+    message:"في الدرس القادم نضيف قائمة الأطعمة ونبرمجها بالمتغيرات والشروط 🧩💜",
+    homework:"📚 الواجب: تدريب ٢ (ص ١٣٨) وتدريب ٣: صِفي كيف يساعد VerticalArrangement في تخطيط الشاشة",
+    clapHint:"اضغطي 👏 أو حرف (ت) لنصفّق لأنفسنا!" }
+];
+</script>
+<script src="../js/lesson-engine.js"></script>
+<!-- منصة الكتاب: لوحة المعلمة -->
+<link rel="stylesheet" href="../css/shared.css">
+<script src="../js/cloud-config.js"></script>
+<script src="../js/cloud-sync.js"></script>
+<script src="../js/lesson-data.js"></script>
+<script src="../js/progress-manager.js"></script>
+<script src="../js/classroom-manager.js"></script>
+<script src="../js/shared.js" data-lesson="lesson-08"></script>
+<script src="../js/lesson-toolkit.js"></script>
+</body>
+</html>

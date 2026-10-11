@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>برمجة التطبيق | عرض تفاعلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/lesson-engine.css">
+</head>
+<body>
+<script>
+/* ==========================================================================
+   ✏️ محتوى الدرس — الوحدة الثالثة • الدرس الثالث: برمجة التطبيق (الكتاب ص ١٣٩–١٦٠)
+   اللبنات تُكتب كسطور: {t:"النص", c:"event|control|var|list|text|logic|comp", ind:الإزاحة}
+   ========================================================================== */
+const LESSON = {
+  subject : "تقنية رقمية ٣",
+  unit    : "الوحدة الثالثة",
+  number  : "الدرس الثالث",
+  title   : "برمجة التطبيق"
+};
+
+const FOODS = ["اللحوم والأسماك","الحبوب","الخضراوات","الفواكه","منتجات الحليب","المكسرات"];
+
+const SLIDES = [
+
+  { type:"prep", anim:"zoom", tag:"🌸 التحضير",
+    greeting:"أهلًا بمبرمجات التطبيقات!",
+    sub:"اليوم نعلّم تطبيقنا كيف يتذكّر ويقرّر 🧠🧩",
+    rules:["👂 أُنصت باهتمام","✋ أرفع يدي للمشاركة","🤝 أتعاون مع مجموعتي","💻 أطبّق بنفسي"] },
+
+  { type:"flip", anim:"slide", tag:"🔁 مراجعة الدرس السابق",
+    title:"تذكّري… بناء تطبيق الهاتف الذكي",
+    note:"اسألي الطالبات أولًا ثم اقلبي البطاقة 👆",
+    cards:[
+      {icon:"🎨", front:"Designer و Blocks", back:"نصمّم الواجهة في Designer ونبرمج المكوّنات في Blocks", ex:"صفحتا مطوّر التطبيقات"},
+      {icon:"🔘", front:"Button",            back:"مكوّن يقوم بمهمة محددة عند ضغطه", ex:"زر «نصائح صحية»"},
+      {icon:"🧩", front:"when Tips.Click",   back:"عند الضغط على الزر ← open another screen \"Screen2\"", ex:"أول برنامج لنا"},
+      {icon:"📲", front:"AI Companion",      back:"تطبيق في الهاتف نمسح به رمز QR لاختبار التطبيق", ex:"أو المحاكي Emulator"} ],
+    bridgeBtn:"🔗 اربطي بدرس اليوم",
+    bridge:"أضفنا زرًا يفتح شاشة… واليوم نضيف زر <b>الأطعمة الصحية</b> وقائمة يتذكّر التطبيق اختيارك منها ويقرّر أي شاشة يفتح 🥗" },
+
+  { type:"predict", anim:"fade", tag:"🔮 التهيئة • ماذا تتوقعين؟",
+    title:"ستة أصناف… وست شاشات",
+    icon:"📋",
+    scenario:"عند الضغط على زر <b>الأطعمة الصحية</b> تظهر قائمة: اللحوم والأسماك، الحبوب، الخضراوات، الفواكه، منتجات الحليب، المكسرات. ولكل صنف <b>شاشة</b> خاصة.",
+    question:"ماذا يحتاج التطبيق ليفتح الشاشة الصحيحة؟ 🤔",
+    answers:[ {icon:"📋",text:"مكانًا يحفظ أسماء الأصناف معًا (قائمة)"},
+              {icon:"🧮",text:"مكانًا يتذكّر الصنف الذي اخترناه (متغير)"},
+              {icon:"❓",text:"سؤالًا: هل الاختيار يساوي «اللحوم والأسماك»؟ (شرط)"},
+              {icon:"📄",text:"أمرًا يفتح الشاشة المطابقة"} ],
+    revealBtn:"🔮 اكشفي توقّعًا",
+    conclusion:"💡 سنستخدم <b>القوائم</b> و<b>المتغيرات</b> و<b>الجملة الشرطية if then</b> 🧩" },
+
+  { type:"title", anim:"zoom",
+    sub:"القوائم • المتغيرات • الاختيار • النشر 🧩",
+    icons:["📋","🧮","❓","📄","📦","🥗"],
+    note:"📝 سجّلي عنوان الدرس في دفترك" },
+
+  { type:"list", anim:"slide", tag:"🎯 أهداف الدرس",
+    title:"في نهاية الدرس ستكونين قادرة على:",
+    items:[ {icon:"📋",text:"إنشاء قائمة باستخدام منتقي القائمة ListPicker"},
+            {icon:"🧮",text:"التمييز بين المتغير المحلي والمتغير العام"},
+            {icon:"🧩",text:"برمجة القائمة بحدثي BeforePicking و AfterPicking"},
+            {icon:"❓",text:"استخدام الجملة الشرطية if then لفتح الشاشة المناسبة"},
+            {icon:"🌾",text:"إنشاء قائمة فرعية"},
+            {icon:"📦",text:"إنشاء ملف APK لمشاركة التطبيق"} ] },
+
+  { type:"cards", anim:"slide", tag:"📋 إنشاء قائمة",
+    title:"القوائم ومنتقي القائمة",
+    intro:"<b>القوائم</b> نوع من تراكيب البيانات لإنشاء وإدارة مجموعات من القيم. ولتضمين قائمة: نضيف <b>ListPicker</b> في Designer ونسمّيه <b>Foods</b> ونكتب عليه «أطعمة صحية»، ثم نبرمجه. أصناف قائمتنا:",
+    cols:6,
+    cards:[ {icon:"🐟",title:"اللحوم والأسماك",text:"Meat and fish"},
+            {icon:"🌾",title:"الحبوب",text:"Cereals"},
+            {icon:"🥦",title:"الخضراوات",text:"Vegetables"},
+            {icon:"🍎",title:"الفواكه",text:"Fruits"},
+            {icon:"🥛",title:"منتجات الحليب",text:"Milk products"},
+            {icon:"🌰",title:"المكسرات",text:"Nuts"} ] },
+
+  { type:"blocks", anim:"zoom", tag:"🧩 من قسم Lists و Text",
+    title:"أنشئي قائمة الأطعمة في متغير عام",
+    question:"لكي نستخدم القائمة يجب أن نعيّنها إلى <b>متغير عام</b> اسمه Foods. اضغطي اللبنات بالترتيب:",
+    lines:[ {t:"initialize global Foods to", c:"var", hint:"نبدأ بتعريف المتغير العام (قسم Variables)"},
+            {t:"make a list", c:"list", ind:1, hint:"قيمة المتغير: قائمة (قسم Lists)"},
+            {t:"\"اللحوم والأسماك\"", c:"text", ind:2},
+            {t:"\"الحبوب\"", c:"text", ind:2},
+            {t:"\"الخضراوات\"", c:"text", ind:2},
+            {t:"\"الفواكه\"", c:"text", ind:2},
+            {t:"\"منتجات الحليب\"", c:"text", ind:2},
+            {t:"\"المكسرات\"", c:"text", ind:2} ],
+    distractors:[ {t:"initialize local a to", c:"var"}, {t:"\"Screen2\"", c:"text"} ],
+    doneMsg:"أحسنتِ! 👏 أنشأتِ قائمة من ٦ عناصر وأسندتِها إلى المتغير العام Foods" },
+
+  { type:"flip", anim:"zoom", tag:"🧮 استخدام المتغيرات",
+    title:"نوعان من المتغيرات",
+    note:"<b>المتغير:</b> موقع تخزين يحتوي على قيمة يمكن أن تتغير أثناء تنفيذ التطبيق (أرقام أو نصوص أو قوائم) 👆",
+    cols:2,
+    cards:[
+      {icon:"📍", front:"المتغير المحلي Local", back:"يُستخدم داخل لبنة محددة فقط", ex:"initialize local \"a\" to 10"},
+      {icon:"🌍", front:"المتغير العام Global", back:"يمكن استخدامه أو تغيير قيمته في أي جزء من التطبيق", ex:"initialize global name to"} ],
+    bridgeBtn:"💡 لماذا نحتاجهما؟",
+    bridge:"نهيّئ المتغير بقيمة أولية، ثم <b>نحدّثه</b> أثناء التنفيذ، ونستخدمه في <b>العبارات الشرطية</b> للتحكم في سلوك التطبيق" },
+
+  { type:"mcq", anim:"fade", tag:"❓ اقرئي اللبنات",
+    title:"توقّعي",
+    icon:"🧮",
+    question:"ما نوع المتغير a في هذه اللبنات؟ وما قيمته؟",
+    code:[ {t:"when Button1 .Click", c:"event"}, {t:"do  initialize local a to  \"10\"", c:"var", ind:1}, {t:"in", c:"var", ind:2} ],
+    options:[ {text:"عام وقيمته 10"}, {text:"محلي وقيمته 10"}, {text:"محلي وقيمته a"}, {text:"عام وقيمته a"} ],
+    correct:1,
+    explain:"📍 <b>initialize local</b> ينشئ متغيرًا محليًا يُستخدم داخل هذه اللبنة فقط، واسمه a وقيمته 10" },
+
+  { type:"blocks", anim:"zoom", tag:"🧩 عرض القائمة",
+    title:"قبل الاختيار: املئي القائمة بالعناصر",
+    question:"عندما يضغط المستخدم على زر القائمة <b>Foods</b> (قبل الاختيار) نعيّن عناصرها من المتغير العام:",
+    lines:[ {t:"when Foods .BeforePicking", c:"event", hint:"الحدث: قبل الاختيار"},
+            {t:"do  set Foods . Elements to", c:"comp", ind:1, hint:"نعيّن عناصر القائمة إلى…"},
+            {t:"get global Foods", c:"var", ind:2, hint:"نحصل على المتغير العام Foods"} ],
+    distractors:[ {t:"when Foods .AfterPicking", c:"event"}, {t:"set global selection to", c:"var"}, {t:"Foods . Selection", c:"comp"} ],
+    doneMsg:"أحسنتِ! 👏 الآن تظهر القائمة عند الضغط على «أطعمة صحية»" },
+
+  { type:"cards", anim:"slide", tag:"🐟 شاشة جديدة",
+    title:"شاشة اللحوم والأسماك Meat_Fish",
+    intro:"عند اختيار «اللحوم والأسماك» تُفتح شاشة خاصة بها. ننشئها ونضيف إليها:",
+    cols:3,
+    cards:[ {icon:"🔤",title:"Labels التسميات",text:"نصوص عن اللحوم والأسماك وفوائدها"},
+            {icon:"🖼️",title:"Image الصورة",text:"Picture ← Upload File ← Choose File ← Open ← OK"},
+            {icon:"📐",title:"حجم الصورة",text:"Height: 30 percent • Width: 50 percent"} ] },
+
+  { type:"mcq", anim:"fade", tag:"❓ اختاري الإجابة الصحيحة",
+    title:"خصائص الصورة",
+    icon:"🖼️",
+    question:"لتظهر صورة شاشة اللحوم والأسماك بحجم مناسب، ضبطنا خاصيتي:",
+    options:[ {text:"Height: 30 percent و Width: 50 percent"}, {text:"FontSize و FontBold"}, {text:"AlignHorizontal و AlignVertical"}, {text:"Title و BackgroundColor"} ],
+    correct:0,
+    explain:"📐 خاصيتا الارتفاع Height والعرض Width في قسم Properties تحددان حجم الصورة نسبةً إلى الشاشة" },
+
+  { type:"foodapp", anim:"zoom", tag:"📱 جرّبي التطبيق",
+    title:"تطبيق الغذاء الصحي يعمل!",
+    foods: FOODS,
+    home:[ {text:"نصائح صحية", go:"tips", bg:"#C8E6C9"}, {text:"أطعمة صحية", go:"foods", bg:"#FFF59D"} ],
+    tips:{ name:"النصائح", labels:["أهمية وجبة الإفطار.","اشربي الماء بانتظام.","مارسي الرياضة يوميًا."] },
+    targets:{
+      "اللحوم والأسماك": { hl:[9,10], screen:{ name:"Meat_Fish", pic:"🐟", labels:["اللحوم والأسماك","مصدر غني بالبروتين الذي يبني الجسم."] } },
+      "الحبوب": { hl:[11,12], sub:["الشوفان","الأرز","الخبز"] } },
+    hl:{ tips:[3,4], before:[5,6], after:[7,8] },
+    code:[ {t:"initialize global Foods to  make a list", c:"var"},
+           {t:"\"اللحوم والأسماك\" \"الحبوب\" \"الخضراوات\" \"الفواكه\" …", c:"text", ind:1},
+           {t:"initialize global selection to  \" \"", c:"var"},
+           {t:"when Tips .Click", c:"event"},
+           {t:"do  open another screen  screenName \"Screen2\"", c:"control", ind:1},
+           {t:"when Foods .BeforePicking", c:"event"},
+           {t:"do  set Foods.Elements to  get global Foods", c:"comp", ind:1},
+           {t:"when Foods .AfterPicking", c:"event"},
+           {t:"do  set global selection to  Foods.Selection", c:"var", ind:1},
+           {t:"if  get global selection  =  \"اللحوم والأسماك\"", c:"control", ind:1},
+           {t:"then  open another screen  screenName \"Meat_Fish\"", c:"control", ind:2},
+           {t:"if  get global selection  =  \"الحبوب\"", c:"control", ind:1},
+           {t:"then  set Foods.Elements to  make a list \"الشوفان\" \"الأرز\" \"الخبز\"", c:"comp", ind:2} ] },
+
+  { type:"blocks", anim:"zoom", tag:"❓ الاختيار",
+    title:"بعد الاختيار: احفظي ثم قرّري",
+    question:"بعد اختيار صنف نحفظه في المتغير <b>selection</b>، ثم نستخدم <b>if then</b>: إذا كان «اللحوم والأسماك» نفتح شاشته:",
+    lines:[ {t:"when Foods .AfterPicking", c:"event", hint:"الحدث: بعد الاختيار"},
+            {t:"do  set global selection to", c:"var", ind:1, hint:"نحفظ الاختيار في المتغير أولًا"},
+            {t:"Foods . Selection", c:"comp", ind:2},
+            {t:"if  get global selection  =  \"اللحوم والأسماك\"", c:"control", ind:1, hint:"ثم نسأل: هل الاختيار يساوي…؟"},
+            {t:"then  open another screen  screenName \"Meat_Fish\"", c:"control", ind:2} ],
+    distractors:[ {t:"when Foods .BeforePicking", c:"event"}, {t:"initialize local a to", c:"var"}, {t:"\"Screen2\"", c:"text"} ],
+    doneMsg:"أحسنتِ! 👏 للحبوب نضع داخل if قائمة فرعية: الشوفان، الأرز، الخبز" },
+
+  { type:"order", anim:"slide", tag:"📦 رابعًا: النشر والتسويق",
+    title:"إنشاء ملف APK",
+    question:"<b>APK</b> تنسيق ملف الحزمة الذي يستخدمه أندرويد لتوزيع التطبيقات وتثبيتها (مثل exe في ويندوز). رتّبي الخطوات:",
+    steps:[ {icon:"🏗️",label:"Build",desc:"بناء"},
+            {icon:"📦",label:"Android App (.apk)",desc:"تطبيق أندرويد"},
+            {icon:"⏳",label:"شريط التقدم",desc:"Progress Bar"},
+            {icon:"💾",label:"حفظ أو QR",desc:"حفظ الملف أو رمز QR (صالح لساعتين فقط)"} ] },
+
+  { type:"match", anim:"slide", tag:"🔗 صلي",
+    title:"كل لبنة… ووظيفتها",
+    question:"صِلي اللبنة بوظيفتها (مثل السؤال السادس في «اختبر نفسك»)",
+    pairs:[ {code:[{t:"when Foods .AfterPicking",c:"event"}], b:"تحدد ما يحدث بعد أن يختار المستخدم عنصرًا من القائمة"},
+            {code:[{t:"initialize local a to \"10\"",c:"var"}], b:"تُنشئ متغيرًا محليًا"},
+            {code:[{t:"initialize global name to",c:"var"}], b:"تُستخدم لتعريف متغير عام"},
+            {code:[{t:"make a list",c:"list"}], b:"تُنشئ قائمة بالعناصر"},
+            {code:[{t:"open another screen screenName",c:"control"}], b:"تفتح شاشة جديدة"} ] },
+
+  { type:"tf", anim:"slide", tag:"✔️✖️ صح أم خطأ",
+    title:"صح أم خطأ؟",
+    items:[ {text:"القوائم نوع من تراكيب البيانات لإدارة مجموعات من القيم.", answer:true},
+            {text:"يمكن استخدام المتغير المحلي في أي جزء من التطبيق.", answer:false, fix:"المحلي داخل لبنة محددة فقط؛ العام في أي جزء"},
+            {text:"حدث BeforePicking يعمل بعد اختيار عنصر من القائمة.", answer:false, fix:"BeforePicking قبل الاختيار؛ AfterPicking بعده"},
+            {text:"يقوم ملف APK في أندرويد بوظيفة ملفات exe في ويندوز.", answer:true},
+            {text:"رمز QR الذي يُنشأ لتنزيل ملف APK صالح لمدة يوم كامل.", answer:false, fix:"صالح لمدة ساعتين فقط"} ] },
+
+  { type:"cards", anim:"slide", tag:"🧩 لنطبق معًا",
+    title:"تدريبات الدرس",
+    intro:"اضغطي على التدريب لتقرئي المطلوب 👇",
+    cols:4,
+    cards:[ {icon:"❓",title:"تدريب ١",text:"أي لبنة تفتح شاشة جديدة؟ وأيها تحدد قيمة للمتغير؟ وأيها تنشئ قيمة أولية له؟"},
+            {icon:"🥗",title:"تدريب ٢",text:"أضيفي بقية الأصناف بقوائم وشاشات: الحبوب، الفواكه، منتجات الحليب، المكسرات"},
+            {icon:"🏃‍♀️",title:"تدريب ٣",text:"زر Sports practice يعرض قائمة تمارين، مع التعليمات البرمجية والاختبار"},
+            {icon:"🗺️",title:"تدريب ٤",text:"تطبيق البلد: زر sightseeing بمنتقي القائمة يفتح شاشة كل معلم، ثم أنشئي ملف .apk"} ] },
+
+  { type:"groups", anim:"slide", tag:"🤝 مشروع الوحدة",
+    title:"تطبيق اختبار قصير 📝",
+    scenario:"تطبيق فيه <b>٣ أسئلة</b> متعددة الخيارات عن التقنية الرقمية، لكل سؤال ٣ خيارات أحدها صحيح (الكتاب ص ١٦٠):",
+    minutes:10,
+    groups:[ {icon:"✏️",name:"التخطيط",color:"#6C3FD1",task:"اكتبن الأسئلة الثلاثة وخياراتها، وارسمن مخططًا يدويًا للشاشات"},
+             {icon:"🎨",name:"الشاشات",color:"#14B8A6",task:"زر «Start the Quiz»، وشاشة لكل سؤال فيها Label وزر بجانب كل إجابة"},
+             {icon:"✅",name:"النتيجة",color:"#F59E0B",task:"شاشتا «Correct Answer» و«Try again»، وفي الثانية زر يعيد إلى الشاشة الأولى"},
+             {icon:"🧩",name:"البرمجة",color:"#EC4899",task:"برمجن الأزرار لتفتح الشاشات الصحيحة، ثم احفظن وجرّبن وحمّلن التطبيق"} ],
+    teamworkTitle:"🧭 خطوات المشروع:",
+    teamwork:["١ خطّطي وارسمي","٢ طوّري بمطوّر التطبيقات","٣ برمجي الأزرار واختبري","٤ حمّلي التطبيق على هاتفك"] },
+
+  { type:"review", anim:"zoom", tag:"🧭 مراجعة",
+    title:"خريطة الدرس — اضغطي على كل فرع",
+    center:"برمجة التطبيق",
+    branches:[ {icon:"📋",label:"القائمة",points:"ListPicker + make a list ← متغير عام Foods"},
+               {icon:"🧮",label:"المتغيرات",points:"محلي داخل لبنة • عام في أي جزء • initialize و set و get"},
+               {icon:"⏮️",label:"BeforePicking",points:"set Foods.Elements to get global Foods"},
+               {icon:"⏭️",label:"AfterPicking",points:"set global selection to Foods.Selection"},
+               {icon:"❓",label:"الاختيار",points:"if selection = «اللحوم والأسماك» then open another screen"},
+               {icon:"📦",label:"النشر",points:"Build ← Android App (.apk) ← حفظ أو رمز QR"} ] },
+
+  { type:"exit", anim:"fade", tag:"⚡ التقييم الفوري",
+    title:"كيف تقيّمين مهارتك في البرمجة باللبنات؟",
+    levels:[ {emoji:"🤩",label:"أستطيع وحدي"}, {emoji:"🙂",label:"أحتاج قليلًا من المساعدة"}, {emoji:"🤔",label:"أحتاج تدريبًا أكثر"} ],
+    ticket:{ title:"🎟️ بطاقة الخروج ٣-٢-١",
+             items:["<b>٣</b> لبنات استخدمتها اليوم","<b>٢</b> فرقان بين المتغير المحلي والعام","<b>١</b> تطبيق أريد برمجته بالقوائم"] } },
+
+  { type:"closing", anim:"zoom",
+    emoji:"🏆",
+    title:"تطبيقك يفكّر ويقرّر! 🌟",
+    message:"المتغير يتذكّر… والشرط يقرّر… وأنتِ المبرمجة 💜",
+    homework:"📚 الواجب: تدريب ٢ (ص ١٥٩): أكملي باقي أصناف الطعام بقوائم وشاشات مطابقة",
+    clapHint:"اضغطي 👏 أو حرف (ت) لنصفّق لأنفسنا!" }
+];
+</script>
+<script src="../js/lesson-engine.js"></script>
+<!-- منصة الكتاب: لوحة المعلمة -->
+<link rel="stylesheet" href="../css/shared.css">
+<script src="../js/cloud-config.js"></script>
+<script src="../js/cloud-sync.js"></script>
+<script src="../js/lesson-data.js"></script>
+<script src="../js/progress-manager.js"></script>
+<script src="../js/classroom-manager.js"></script>
+<script src="../js/shared.js" data-lesson="lesson-09"></script>
+<script src="../js/lesson-toolkit.js"></script>
+</body>
+</html>

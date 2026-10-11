@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>الإدارة الصفية | التقنية الرقمية 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/classroom.css">
+</head>
+<body class="dash cr">
+<!-- ===================================================================
+     الإدارة الصفية: الفصول • كشف الطالبات والتقييم بالأيقونات • الحضور والغياب
+     • أعمال السنة ورصد الدرجات • التقارير • الإعدادات
+     البيانات محفوظة في هذا المتصفح فقط (js/classroom-manager.js)
+     واجهة الصفحة: js/classroom-app.js
+     =================================================================== -->
+
+<!-- الإعداد الأول -->
+<section id="setupView" class="view" hidden>
+  <div class="wrap">
+    <form class="card setup" id="setupForm" autocomplete="off" novalidate>
+      <!-- الخطوة ١: بيانات المعلمة وعدد الفصول -->
+      <div id="step1">
+        <p class="steps"><b>١</b> البيانات وعدد الفصول <span>←</span> <i>٢</i> أسماء الطالبات</p>
+        <h1>👋 أهلًا بكِ في لوحة المعلمة</h1>
+        <p class="muted">خطوتان قبل البدء. كل ما تكتبينه يُحفظ في المتصفح أولًا بأول، ويمكنكِ تعديله لاحقًا من «⚙️ الإعدادات».</p>
+        <div class="grid2">
+          <label>اسم المعلمة *<input name="teacher" placeholder="مثال: أ. نورة العتيبي"></label>
+          <label>اسم المدرسة<input name="school" placeholder="مثال: الثانوية الثانية عشرة بتبوك"></label>
+          <label>المادة<input name="subject" value="التقنية الرقمية 3"></label>
+          <label>العام الدراسي<input name="year" value="1448 هـ"></label>
+          <label>الصف<input name="gradeName" value="ثالث ثانوي"></label>
+        </div>
+        <h3>🏫 كم فصلًا تدرّسين؟</h3>
+        <div class="count-btns" role="group" aria-label="عدد الفصول" id="countBtns"></div>
+        <p class="muted" id="classPreview" style="margin:10px 0 0"></p>
+        <div class="row" style="margin-top:18px">
+          <button class="btn primary" type="button" id="toStep2">التالي: أسماء الطالبات ←</button>
+          <button class="btn quiet" type="button" id="skipSetup">تخطي الآن</button>
+        </div>
+      </div>
+      <!-- الخطوة ٢: أسماء طالبات كل فصل -->
+      <div id="step2" hidden>
+        <p class="steps"><i>١</i> البيانات وعدد الفصول <span>←</span> <b>٢</b> أسماء الطالبات</p>
+        <h1>👧 أسماء الطالبات</h1>
+        <p class="muted">اسم في كل سطر — يمكنكِ اللصق مباشرة من نور أو Excel. يمكن ترك فصل فارغًا وإضافة أسمائه لاحقًا.</p>
+        <div class="row" style="margin-bottom:12px"><button class="btn sm" type="button" id="setupXlsx" style="border-color:#16A34A;color:#166534">📥 استيراد كل الفصول من ملف Excel</button><span class="muted">ورقة لكل فصل فيها عمود «اسم الطالبة»</span></div>
+        <div class="cls-tabs" role="tablist" id="clsTabs"></div>
+        <div id="clsPanels"></div>
+        <p class="privacy" style="margin:14px 0">🔒 الأسماء والدرجات تُحفظ في حسابك المحمي بكلمة المرور، وتظهر على أي جهاز تدخلين منه.</p>
+        <div class="row">
+          <button class="btn" type="button" id="toStep1">→ رجوع</button>
+          <button class="btn primary" type="submit">✓ ابدئي</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- الواجهة الرئيسية -->
+<div id="appView" hidden>
+  <header class="cr-top">
+    <div class="wrap">
+      <a class="btn sm" href="home.html">🏠 لوحة المعلمة</a>
+      <div class="cr-id"><b id="hdTeacher"></b><span id="hdSchool"></span></div>
+      <div class="cls-pick"><select id="classSel" aria-label="الفصل الحالي"></select><button class="btn sm" id="addClassBtn" title="إضافة فصل">＋ فصل</button><button class="btn sm primary" data-xlsx="class" title="تصدير بيانات الفصل الحالي إلى Excel">📊 Excel</button></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="tabs" role="tablist" aria-label="أقسام الإدارة الصفية">
+      <button role="tab" data-tab="roster"><span>📋</span>الكشف</button>
+      <button role="tab" data-tab="attendance"><span>✅</span>الحضور</button>
+      <button role="tab" data-tab="grades"><span>📊</span>أعمال السنة</button>
+      <button role="tab" data-tab="reports"><span>📈</span>التقارير</button>
+      <button role="tab" data-tab="settings"><span>⚙️</span>الإعدادات</button>
+    </nav>
+
+    <section class="view" id="v-roster" role="tabpanel" hidden></section>
+    <section class="view" id="v-attendance" role="tabpanel" hidden></section>
+    <section class="view" id="v-grades" role="tabpanel" hidden></section>
+    <section class="view" id="v-reports" role="tabpanel" hidden></section>
+    <section class="view" id="v-settings" role="tabpanel" hidden></section>
+  </div>
+</div>
+
+<!-- بطاقة الطالبة -->
+<div class="drawer" id="drawer" aria-hidden="true">
+  <div class="bg" data-close></div>
+  <aside class="panel" role="dialog" aria-modal="true" aria-labelledby="drName" id="drPanel"></aside>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="restoreFile" accept=".json,application/json" hidden>
+<input type="file" id="xlsxFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+
+<script src="js/cloud-config.js"></script>
+<script src="js/cloud-sync.js"></script>
+<script src="js/xlsx-reader.js"></script>
+<script src="js/xlsx-writer.js"></script>
+<script src="js/classroom-manager.js"></script>
+<script src="js/classroom-app.js"></script>
+</body>
+</html>

@@ -1,0 +1,2729 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بناء خطة المشروع وإدارة المهام | عرض تفاعلي</title>
+<!-- خط عربي واضح (إن لم يتوفر الإنترنت سيُستخدم خط النظام تلقائيًا) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   1) الألوان والهوية البصرية — غيّري الألوان من هنا
+   ========================================================= */
+:root{
+  --p:#6C3FD1;      /* البنفسجي الأساسي */
+  --p2:#8B5CF6;     /* بنفسجي فاتح */
+  --pd:#46238F;     /* بنفسجي غامق */
+  --pl:#EFE8FF;     /* خلفية بنفسجية ناعمة */
+  --pl2:#F8F5FF;
+  --ac:#14B8A6;     /* اللون المساعد (فيروزي) */
+  --acd:#0E8C7F;
+  --am:#F59E0B;     /* لمسة ذهبية */
+  --pink:#EC4899;
+  --ok:#10B981;
+  --bad:#F43F5E;
+  --ink:#2A1B4D;    /* لون النص */
+  --mut:#6B5E8A;
+  --line:#E6DDFF;
+}
+
+/* =========================================================
+   2) أساسيات الصفحة — منع التمرير وتثبيت نسبة 16:9
+   ========================================================= */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#E7E0F8;font-family:'Cairo',Tahoma,'Segoe UI',sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none}
+input{user-select:text;-webkit-user-select:text}
+button{font-family:inherit;cursor:pointer}
+b{color:var(--p);font-weight:900}
+
+/* المسرح: 1600×900 ويتم تكبيره/تصغيره بالجافاسكربت ليملأ الشاشة */
+#stage{
+  position:absolute;left:50%;top:50%;width:1600px;height:900px;
+  transform-origin:center center;overflow:hidden;overflow:clip;
+  background:linear-gradient(140deg,#FDFBFF 0%,#F4EEFF 60%,#EEF9F7 100%);
+}
+/* زخارف خلفية ناعمة */
+#stage::before,#stage::after{content:"";position:absolute;border-radius:50%;pointer-events:none;z-index:0}
+#stage::before{width:620px;height:620px;left:-220px;top:-260px;background:radial-gradient(circle,rgba(139,92,246,.16),transparent 70%)}
+#stage::after{width:560px;height:560px;right:-200px;bottom:-240px;background:radial-gradient(circle,rgba(20,184,166,.14),transparent 70%)}
+
+/* =========================================================
+   3) الشرائح وحركات الانتقال
+   ========================================================= */
+.slide{position:absolute;inset:0;overflow:hidden;overflow:clip;padding:48px 88px 70px;display:flex;flex-direction:column;opacity:0;visibility:hidden;z-index:1}
+.slide.active{opacity:1;visibility:visible;z-index:2}
+.slide.active[data-anim="fade"]{animation:inFade .7s ease both}
+.slide.active[data-anim="zoom"]{animation:inZoom .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.active[data-anim="slide"][data-dir="next"]{animation:inNext .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.active[data-anim="slide"][data-dir="prev"]{animation:inPrev .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.leaving{visibility:visible;opacity:1;animation:out .45s ease forwards;z-index:1}
+@keyframes inFade{from{opacity:0}to{opacity:1}}
+@keyframes inZoom{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:none}}
+@keyframes inNext{from{opacity:0;transform:translateX(-90px)}to{opacity:1;transform:none}}
+@keyframes inPrev{from{opacity:0;transform:translateX(90px)}to{opacity:1;transform:none}}
+@keyframes out{to{opacity:0;transform:scale(.97)}}
+
+/* ظهور العناصر بالتتابع */
+.slide.active .rv{animation:rise .6s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0) * 90ms + 180ms)}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+@keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(18deg)}75%{transform:rotate(-12deg)}}
+.shake{animation:shake .45s ease !important}
+.float{display:inline-block;animation:floaty 3.2s ease-in-out infinite}
+
+/* =========================================================
+   4) عناصر مشتركة
+   ========================================================= */
+.shead{display:flex;align-items:center;gap:22px;margin-bottom:26px;flex-wrap:wrap}
+.tag{background:#fff;color:var(--p);font-weight:800;font-size:23px;padding:7px 22px;border-radius:999px;border:2px solid var(--line);box-shadow:0 4px 14px rgba(108,63,209,.08);white-space:nowrap}
+.stitle{font-size:54px;font-weight:900;margin:0;line-height:1.3;color:var(--ink)}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;gap:22px}
+.lead{font-size:30px;line-height:1.7;margin:0;color:var(--ink)}
+.muted{color:var(--mut)}
+.center{text-align:center}
+.row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.row.c{justify-content:center}
+
+.card{background:#fff;border-radius:28px;border:2px solid #EEE7FF;box-shadow:0 14px 36px rgba(76,40,160,.09)}
+
+.btn{font-size:25px;font-weight:800;border:none;border-radius:18px;padding:12px 30px;background:var(--p);color:#fff;
+  box-shadow:0 7px 0 var(--pd);transition:transform .15s, box-shadow .15s, filter .2s}
+.btn:hover{transform:translateY(-3px);filter:brightness(1.08)}
+.btn:active{transform:translateY(5px);box-shadow:0 2px 0 var(--pd)}
+.btn.ghost{background:#fff;color:var(--p);border:2px solid var(--line);box-shadow:0 6px 0 #DCCFFF}
+.btn.teal{background:var(--ac);box-shadow:0 7px 0 var(--acd)}
+.btn.sm{font-size:21px;padding:8px 20px;border-radius:14px}
+
+.hidden-step{opacity:0;transform:translateY(20px) scale(.97);transition:all .5s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.hidden-step.show{opacity:1;transform:none;pointer-events:auto}
+
+.note{background:linear-gradient(90deg,#FFF7E6,#FFFBF2);border:2px dashed #F6C977;border-radius:20px;padding:14px 26px;font-size:26px;font-weight:700;color:#7A4C00}
+.chip{background:var(--pl);color:var(--pd);border-radius:999px;padding:8px 22px;font-size:24px;font-weight:800;border:2px solid var(--line)}
+
+.feedback{min-height:64px;font-size:32px;font-weight:900;text-align:center;display:flex;align-items:center;justify-content:center}
+.feedback .ok{color:var(--ok);animation:pop .5s both}
+.feedback .no{color:var(--p);animation:pop .5s both}
+
+/* =========================================================
+   5) شريط التحكم + المؤشرات (داخل المسرح فلا يغطي المحتوى)
+   ========================================================= */
+#progress{position:absolute;top:0;right:0;height:7px;background:linear-gradient(90deg,var(--ac),var(--p2),var(--p));z-index:40;transition:width .5s ease;border-radius:0 0 0 8px}
+#bar{position:absolute;bottom:10px;left:14px;display:flex;align-items:center;gap:4px;
+  background:rgba(42,27,77,.72);padding:4px 6px;border-radius:999px;z-index:40;
+  box-shadow:0 4px 12px rgba(42,27,77,.18);transition:opacity .35s, transform .35s}
+#bar button{border:none;background:transparent;color:#fff;font-size:15px;font-weight:800;height:30px;padding:0 10px;border-radius:999px;transition:background .2s}
+#bar button:hover{background:rgba(255,255,255,.2)}
+#bar button:active{transform:scale(.92)}
+#bar .clap{font-size:17px;padding:0 8px}
+#bar .count{color:#fff;font-size:14px;font-weight:800;min-width:54px;text-align:center}
+#bar .sep{width:1px;height:18px;background:rgba(255,255,255,.25)}
+#hint{position:absolute;bottom:14px;right:16px;z-index:40;font-size:13px;font-weight:700;color:var(--mut);background:rgba(255,255,255,.75);
+  border:1px solid var(--line);padding:3px 12px;border-radius:999px;transition:opacity .35s}
+body.idle #bar{opacity:0;transform:translateY(20px);pointer-events:none}
+body.idle #hint{opacity:0}
+body.idle{cursor:none}
+
+/* طبقة المؤثرات (تصفيق/احتفال) */
+#fx{position:absolute;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.clapfx{position:absolute;font-size:46px;animation:clapUp 1.8s ease-out forwards}
+@keyframes clapUp{0%{opacity:0;transform:translate(0,0) scale(.5)}15%{opacity:1;transform:translate(calc(var(--dx)*.2),-60px) scale(1.1)}100%{opacity:0;transform:translate(var(--dx),-520px) scale(.8) rotate(var(--r))}}
+.conf{position:absolute;width:14px;height:20px;border-radius:4px;animation:burst 1.3s cubic-bezier(.1,.7,.3,1) forwards}
+@keyframes burst{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r))}}
+.bigmsg{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:64px;font-weight:900;color:var(--p);background:#fff;
+  padding:24px 50px;border-radius:32px;box-shadow:0 20px 60px rgba(76,40,160,.25);animation:bigmsg 1.6s ease forwards;white-space:nowrap}
+@keyframes bigmsg{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%)}}
+
+/* =========================================================
+   6) تصميم أنواع الشرائح
+   ========================================================= */
+
+/* --- التحضير --- */
+.prep{display:flex;justify-content:center;flex:1;min-height:0;align-items:center}
+.prep-hero{text-align:center;padding:40px 90px;min-width:900px}
+.prep-hero .wave{font-size:120px;display:inline-block;animation:wave 2s ease-in-out infinite;transform-origin:70% 80%}
+.prep-hero h1{font-size:66px;font-weight:900;margin:10px 0 6px;color:var(--pd)}
+.prep-hero p{font-size:32px;margin:0 0 20px;color:var(--mut);font-weight:700}
+.date{display:inline-flex;flex-direction:column;gap:4px;background:var(--pl);border-radius:20px;padding:14px 36px;font-size:32px;font-weight:800;color:var(--pd)}
+.date small{font-size:26px;color:var(--mut);font-weight:700}
+.prep-side h3{font-size:32px;margin:0 0 18px}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.check{display:flex;align-items:center;gap:16px;background:#fff;border:3px solid var(--line);border-radius:24px;padding:20px 22px;font-size:28px;font-weight:800;color:var(--ink);transition:all .25s;text-align:right}
+.check:hover{transform:translateY(-4px);border-color:var(--p2)}
+.check .ci{font-size:46px}
+.check .box{margin-inline-start:auto;width:44px;height:44px;border-radius:14px;border:3px solid var(--line);display:grid;place-items:center;color:transparent;font-size:28px;transition:all .25s}
+.check.on{border-color:var(--ok);background:#ECFDF5}
+.check.on .box{background:var(--ok);border-color:var(--ok);color:#fff;animation:pop .4s}
+.ready-msg{margin-top:20px;font-size:32px;font-weight:900;color:var(--ok);text-align:center}
+.rules{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* --- بطاقات القلب --- */
+.flips{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;flex:1;min-height:0;max-height:420px}
+.flip{perspective:1400px;background:none;border:none;padding:0;height:100%}
+.flip-in{position:relative;width:100%;height:100%;transition:transform .8s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.face.front{background:linear-gradient(160deg,#fff,var(--pl));border:3px solid var(--line);box-shadow:0 14px 34px rgba(76,40,160,.1)}
+.face.front .ic{font-size:92px}
+.face.front .ft{font-size:40px;font-weight:900;color:var(--pd);margin-top:10px}
+.face.front .tap{font-size:20px;color:var(--mut);margin-top:10px;font-weight:700}
+.face.back{transform:rotateY(180deg);background:linear-gradient(160deg,var(--p),var(--pd));color:#fff}
+.face.back .bt{font-size:30px;font-weight:800;line-height:1.6}
+.face.back .ex{font-size:22px;margin-top:16px;background:rgba(255,255,255,.16);padding:8px 16px;border-radius:14px;font-weight:700}
+.bridge{font-size:36px;font-weight:800;text-align:center;padding:22px;background:linear-gradient(90deg,#ECFDF5,#F0EBFF);border-radius:24px;border:2px solid #CFF3EC}
+
+/* --- ماذا تتوقعين --- */
+.predict{display:grid;grid-template-columns:1fr 1fr;gap:40px;flex:1;min-height:0}
+.scene{padding:36px 40px;display:flex;flex-direction:column;justify-content:center;gap:20px;background:linear-gradient(160deg,#fff,#FFF6EC)}
+.scene .big{font-size:100px;text-align:center}
+.scene p{font-size:32px;line-height:1.8;margin:0;font-weight:600}
+.pred-list{display:flex;flex-direction:column;gap:16px}
+.pred-q{font-size:40px;font-weight:900;color:var(--pd);margin:0 0 6px}
+.pred-item{display:flex;align-items:center;gap:18px;background:#fff;border:2px solid var(--line);border-radius:22px;padding:14px 22px;font-size:30px;font-weight:800}
+.pred-item span{font-size:42px}
+
+/* --- العنوان --- */
+.titleS{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
+.titleS .kicker{font-size:30px;font-weight:800;color:var(--mut)}
+.titleS .badge{background:var(--p);color:#fff;font-size:32px;font-weight:900;padding:8px 36px;border-radius:999px;margin:18px 0 8px;box-shadow:0 8px 0 var(--pd)}
+.titleS h1{font-size:108px;font-weight:900;margin:8px 0;background:linear-gradient(90deg,var(--pd),var(--p2),var(--ac));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.35}
+.titleS .sub{font-size:38px;font-weight:700;color:var(--ink)}
+.orbit{position:absolute;font-size:64px;opacity:.9}
+.titleS .tnote{margin-top:26px}
+
+/* --- القائمة (الأهداف) --- */
+.olist{display:grid;grid-template-columns:1fr 1fr;gap:20px 32px}
+.oitem{display:flex;align-items:center;gap:20px;padding:20px 26px;font-size:31px;font-weight:800}
+.oitem .n{flex:none;width:58px;height:58px;border-radius:18px;background:var(--pl);display:grid;place-items:center;font-size:34px}
+
+/* --- المعادلة --- */
+.eq{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:10px}
+.eq-op{font-size:70px;font-weight:900;color:var(--p2)}
+.eq-box{width:250px;height:230px;border-radius:30px;border:3px dashed var(--p2);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:all .3s;position:relative}
+.eq-box:hover{transform:translateY(-6px)}
+.eq-box .q{font-size:100px;font-weight:900;color:var(--p2)}
+.eq-box .a{display:none;flex-direction:column;align-items:center;gap:8px}
+.eq-box .a i{font-style:normal;font-size:74px}
+.eq-box .a span{font-size:28px;font-weight:900;color:var(--pd)}
+.eq-box.on{border-style:solid;border-color:var(--p);background:linear-gradient(160deg,#fff,var(--pl))}
+.eq-box.on .q{display:none}
+.eq-box.on .a{display:flex;animation:pop .5s}
+.eq-box.res{border-color:var(--ac)}
+.eq-box.res.on{border-color:var(--ac);background:linear-gradient(160deg,#fff,#E6FBF8)}
+.defbox{padding:22px 34px;font-size:32px;line-height:1.7;font-weight:600;border-right:10px solid var(--p)}
+
+/* --- التصنيف --- */
+.sort-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.sitem{padding:16px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;transition:all .3s;position:relative}
+.sitem .si{font-size:52px;line-height:1}
+.sitem .st{font-size:27px;font-weight:800;min-height:44px;display:flex;align-items:center}
+.sitem .sb{display:flex;gap:10px}
+.sitem .sb button{border:2px solid var(--line);background:#fff;border-radius:14px;padding:6px 16px;font-size:22px;font-weight:800;color:var(--ink);transition:all .2s}
+.sitem .sb button:hover{background:var(--pl);border-color:var(--p2)}
+.sitem .sb button.x{background:#FFE4E8;border-color:var(--bad)}
+.sitem .done{display:none;font-size:25px;font-weight:900;padding:6px 20px;border-radius:999px;color:#fff}
+.sitem.ok .sb{display:none}
+.sitem.ok .done{display:block;animation:pop .45s}
+.sitem.ok.ca{border-color:var(--p);background:#F7F3FF}.sitem.ok.ca .done{background:var(--p)}
+.sitem.ok.cb{border-color:var(--ac);background:#EEFBF9}.sitem.ok.cb .done{background:var(--ac)}
+.score{font-size:26px;font-weight:900;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 22px;color:var(--pd)}
+
+/* --- البطاقات القابلة للنقر --- */
+.cgrid{display:grid;gap:20px;flex:1;min-height:0}
+.ccard{padding:18px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;transition:all .3s;border:2px solid #EEE7FF}
+.ccard:hover{transform:translateY(-5px);border-color:var(--p2)}
+.ccard .ci{font-size:58px;line-height:1.1;transition:transform .3s}
+.ccard .ct{font-size:29px;font-weight:900;color:var(--pd)}
+.ccard .cx{font-size:23px;font-weight:700;line-height:1.6;color:var(--ink);opacity:0;transform:translateY(10px);transition:all .4s}
+.ccard .tap{font-size:18px;color:var(--mut);font-weight:700;transition:opacity .3s}
+.ccard.open{background:linear-gradient(160deg,#fff,var(--pl));border-color:var(--p)}
+.ccard.open .cx{opacity:1;transform:none}
+.ccard.open .tap{opacity:0;height:0}
+.chips{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* --- المثلث --- */
+.tri{display:grid;grid-template-columns:640px 1fr;gap:40px;flex:1;min-height:0;align-items:center}
+.tri-wrap{position:relative;width:620px;height:500px}
+.tri-wrap svg{position:absolute;inset:0}
+.tnode{position:absolute;width:170px;height:110px;border-radius:26px;border:3px solid var(--p);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:var(--pd);transition:all .25s;transform:translate(-50%,-50%);box-shadow:0 10px 26px rgba(76,40,160,.12)}
+.tnode i{font-style:normal;font-size:42px}
+.tnode:hover,.tnode.on{background:var(--p);color:#fff;transform:translate(-50%,-50%) scale(1.07)}
+.tcenter{position:absolute;left:50%;top:62%;transform:translate(-50%,-50%);background:#E6FBF8;color:var(--acd);border-radius:999px;padding:10px 26px;font-size:26px;font-weight:900;border:2px solid #BDEFE8}
+.tinfo{padding:26px 32px;min-height:170px;font-size:29px;line-height:1.7;font-weight:600}
+.tinfo h3{margin:0 0 6px;font-size:34px;color:var(--p)}
+.lab{padding:20px 28px;margin-top:20px}
+.lab h4{margin:0 0 10px;font-size:27px}
+.lab input[type=range]{width:100%;accent-color:var(--p);height:34px}
+.barrow{display:grid;grid-template-columns:130px 1fr 150px;align-items:center;gap:14px;font-size:24px;font-weight:800;margin-top:8px}
+.bartrack{height:26px;background:var(--pl);border-radius:999px;overflow:hidden}
+.barfill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+
+/* --- فكر زاوج شارك --- */
+.tps-q{padding:26px 34px;font-size:40px;font-weight:900;text-align:center;background:linear-gradient(135deg,#fff,var(--pl))}
+.tps-row{display:grid;grid-template-columns:repeat(3,1fr) 300px;gap:20px;align-items:stretch}
+.phase{padding:18px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:28px;font-weight:900;border:3px solid #EEE7FF;transition:all .3s}
+.phase i{font-style:normal;font-size:56px}
+.phase small{font-size:21px;color:var(--mut);font-weight:700}
+.phase.on{border-color:var(--ac);background:#EEFBF9;transform:translateY(-6px)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.cmp .col{padding:18px 26px}
+.cmp h4{margin:0 0 6px;font-size:30px;color:var(--p)}
+.cmp ul{margin:0;padding-inline-start:28px;font-size:25px;font-weight:700;line-height:1.7}
+
+/* --- المؤقت --- */
+.timer{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px}
+.tm-num{font-size:62px;font-weight:900;color:var(--pd);font-variant-numeric:tabular-nums;line-height:1}
+.timer.done .tm-num{color:var(--bad);animation:shake .5s 2}
+.timer .ringbox{position:relative;width:300px;height:300px}
+.timer .ringbox svg{transform:rotate(-90deg)}
+.timer .ringbox .tm-num{position:absolute;inset:0;display:grid;place-items:center;font-size:90px}
+.timer circle.bg{stroke:var(--pl)}
+.timer circle.fg{stroke:var(--p);transition:stroke-dashoffset 1s linear, stroke .3s}
+.timer.warn circle.fg{stroke:var(--bad)}
+
+/* --- الترتيب --- */
+.slots{display:flex;align-items:stretch;justify-content:center;gap:8px}
+.slot{width:250px;min-height:200px;border-radius:24px;border:3px dashed var(--line);background:rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px 12px;text-align:center;gap:6px}
+.slot .sn{width:48px;height:48px;border-radius:50%;background:var(--pl);display:grid;place-items:center;font-size:26px;font-weight:900;color:var(--p)}
+.slot.fill{border-style:solid;border-color:var(--p);background:#fff;animation:pop .45s}
+.slot.fill .sn{background:var(--p);color:#fff}
+.slot .sl{font-size:28px;font-weight:900;color:var(--pd)}
+.slot .sd{font-size:20px;font-weight:700;color:var(--mut);line-height:1.5}
+.arrow{align-self:center;font-size:40px;color:var(--p2);font-weight:900}
+.pool{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.pool button{font-size:28px;font-weight:900;padding:14px 26px;border-radius:20px;border:3px solid var(--line);background:#fff;color:var(--ink);box-shadow:0 6px 0 #DCCFFF;transition:all .2s}
+.pool button:hover{transform:translateY(-4px);border-color:var(--p2)}
+.pool button.used{visibility:hidden}
+
+/* --- اختيار من متعدد --- */
+.mcq-q{padding:26px 36px;font-size:40px;font-weight:900;text-align:center;line-height:1.6;display:flex;align-items:center;justify-content:center;gap:24px}
+.mcq-q .qi{font-size:76px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.opt{display:flex;align-items:center;gap:20px;padding:18px 26px;font-size:31px;font-weight:800;background:#fff;border:3px solid var(--line);border-radius:26px;color:var(--ink);text-align:right;transition:all .2s;box-shadow:0 6px 0 #E6DDFF}
+.opt:hover{transform:translateY(-4px);border-color:var(--p2)}
+.opt .oi{flex:none;width:62px;height:62px;border-radius:18px;background:var(--pl);display:grid;place-items:center;font-size:36px;font-weight:900;color:var(--p)}
+.opt.right{background:#ECFDF5;border-color:var(--ok);box-shadow:0 6px 0 #A7F3D0}
+.opt.right .oi{background:var(--ok);color:#fff}
+.opt.wrong{background:#FFF1F4;border-color:#FDA4AF;opacity:.75}
+.explain{font-size:27px;font-weight:700;text-align:center;color:var(--acd)}
+
+/* --- صح وخطأ --- */
+.tf-list{display:flex;flex-direction:column;gap:14px}
+.tf{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:14px 24px;transition:all .3s}
+.tf .tt{font-size:28px;font-weight:800}
+.tf .fix{display:block;font-size:22px;color:var(--acd);font-weight:700;margin-top:4px}
+.tf .tb{display:flex;gap:12px}
+.tf .tb button{width:120px;height:58px;border-radius:16px;border:3px solid var(--line);background:#fff;font-size:25px;font-weight:900;transition:all .2s}
+.tf .tb button:hover{transform:translateY(-3px)}
+.tf .tb .t{color:var(--ok)} .tf .tb .f{color:var(--bad)}
+.tf.ok{border-color:var(--ok);background:#F2FDF8}
+.tf .tb button.sel{background:var(--ok);color:#fff;border-color:var(--ok)}
+.tf .tb button.x{background:#FFE4E8;border-color:var(--bad)}
+
+/* --- العصف الذهني --- */
+.storm{position:relative;flex:1;min-height:0}
+.storm-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:420px;padding:26px;border-radius:40px;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;text-align:center;font-size:32px;font-weight:900;line-height:1.5;box-shadow:0 18px 40px rgba(76,40,160,.3);z-index:2}
+.idea{position:absolute;transform:translate(-50%,-50%);background:#fff;border:3px solid var(--line);border-radius:26px;padding:10px 22px;font-size:25px;font-weight:800;max-width:390px;text-align:center;animation:ideaIn .5s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 8px 20px rgba(76,40,160,.1);width:max-content;line-height:1.5}
+.idea.book{border-color:var(--ac);background:#EEFBF9}
+@keyframes ideaIn{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}}
+.storm-in{display:flex;gap:14px;align-items:center}
+.storm-in input{flex:1;font-family:inherit;font-size:26px;font-weight:700;padding:12px 22px;border-radius:18px;border:3px solid var(--line);outline:none;color:var(--ink)}
+.storm-in input:focus{border-color:var(--p2)}
+
+/* --- المجموعات --- */
+.groups{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.grp{padding:20px 18px;text-align:center;border-top:10px solid var(--c)}
+.grp i{font-style:normal;font-size:54px;display:block}
+.grp h4{margin:6px 0;font-size:29px;color:var(--c)}
+.grp p{margin:0;font-size:24px;font-weight:700;line-height:1.6}
+.gfoot{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:center}
+
+/* --- بطاقة المشروع (تطبيق عملي) --- */
+.builder{display:grid;grid-template-columns:1fr 1fr;gap:34px;flex:1;min-height:0}
+.fields{display:flex;flex-direction:column;gap:12px}
+.field{display:grid;grid-template-columns:230px 1fr;align-items:center;gap:14px;font-size:25px;font-weight:800}
+.field input{font-family:inherit;font-size:24px;font-weight:700;padding:10px 18px;border-radius:16px;border:3px solid var(--line);outline:none;color:var(--ink);width:100%}
+.field input:focus{border-color:var(--p2)}
+.pcard{align-self:start;padding:24px 30px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(160deg,#fff,var(--pl));border:3px solid var(--p2)}
+.pcard h3{margin:0;font-size:38px;color:var(--pd);text-align:center}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pstat{background:#fff;border-radius:20px;padding:12px;text-align:center;border:2px solid var(--line)}
+.pstat i{font-style:normal;font-size:38px;display:block}
+.pstat b{display:block;font-size:22px;color:var(--mut)}
+.pstat span{font-size:23px;font-weight:800;word-break:break-word}
+.pcard .stk{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:44px}
+.pcard .stk .chip{font-size:21px;padding:5px 16px}
+.pcard.approved{border-color:var(--ok);box-shadow:0 0 0 8px rgba(16,185,129,.15)}
+.stamp{display:none;text-align:center;font-size:30px;font-weight:900;color:var(--ok)}
+.pcard.approved .stamp{display:block;animation:pop .5s}
+
+/* --- تحدي الدقيقة --- */
+.chal{display:grid;grid-template-columns:380px 1fr;gap:40px;flex:1;min-height:0;align-items:center}
+.chal-task{font-size:34px;font-weight:800;line-height:1.7;padding:24px 32px}
+.counter{display:flex;align-items:center;gap:18px;justify-content:center;font-size:26px;font-weight:800}
+.counter .cn{font-size:60px;font-weight:900;color:var(--p);min-width:90px;text-align:center}
+.ans-grid{display:flex;flex-wrap:wrap;gap:12px}
+.ans-grid .chip{font-size:25px}
+
+/* --- المراجعة (خريطة ذهنية) --- */
+.mind{display:grid;grid-template-columns:1fr 360px 1fr;gap:26px;flex:1;min-height:0;align-items:center}
+.mcol{display:flex;flex-direction:column;gap:16px}
+.mcore{width:320px;height:320px;border-radius:50%;margin:auto;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;display:grid;place-items:center;text-align:center;font-size:38px;font-weight:900;padding:40px;line-height:1.5;box-shadow:0 0 0 18px rgba(139,92,246,.15),0 20px 50px rgba(76,40,160,.3)}
+.branch{padding:14px 22px;text-align:right;border:3px solid #EEE7FF;transition:all .3s;display:block;width:100%;background:#fff;border-radius:24px;font-family:inherit;color:var(--ink)}
+.branch:hover{border-color:var(--p2)}
+.branch .bh{font-size:29px;font-weight:900;color:var(--pd);display:flex;align-items:center;gap:12px}
+.branch .bp{font-size:22px;font-weight:700;color:var(--mut);max-height:0;overflow:hidden;opacity:0;transition:all .4s;line-height:1.6}
+.branch.open{border-color:var(--p);background:#FAF7FF}
+.branch.open .bp{max-height:120px;opacity:1;margin-top:4px}
+
+/* --- التقييم الفوري --- */
+.exit{display:grid;grid-template-columns:1.2fr 1fr;gap:34px;flex:1;min-height:0}
+.votes{display:flex;flex-direction:column;gap:18px;padding:24px 30px;justify-content:center}
+.vote{display:grid;grid-template-columns:90px 230px 1fr 60px;align-items:center;gap:14px;background:none;border:none;padding:6px;border-radius:20px;text-align:right;color:var(--ink)}
+.vote:hover{background:var(--pl2)}
+.vote .ve{font-size:70px;transition:transform .2s}
+.vote:active .ve{transform:scale(1.3)}
+.vote .vl{font-size:27px;font-weight:800}
+.vote .vc{font-size:32px;font-weight:900;color:var(--p)}
+.ticket{padding:26px 32px;background:linear-gradient(160deg,#fff,#FFF6EC);border:3px dashed #F6C977}
+.ticket h3{margin:0 0 14px;font-size:34px;color:#B45309}
+.ticket div{font-size:28px;font-weight:700;padding:12px 0;border-bottom:2px dashed #F3DDB3}
+.ticket div:last-child{border:none}
+.ticket div b{font-size:38px;color:#D97706}
+
+/* --- الختام --- */
+.closing{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px}
+.closing .trophy{font-size:150px;animation:floaty 3s ease-in-out infinite}
+.closing h1{font-size:90px;margin:0;font-weight:900;color:var(--pd)}
+.closing p{font-size:36px;font-weight:700;margin:0;max-width:1150px;line-height:1.7}
+
+/* =========================================================
+   7) إضافات: تصنيف متعدد • أيزنهاور • العلاقات • محاكي جانت
+   ========================================================= */
+.sitem .sb{flex-wrap:wrap;justify-content:center}
+.sitem.ok.c0{border-color:var(--p);background:#F7F3FF}.sitem.ok.c0 .done{background:var(--p)}
+.sitem.ok.c1{border-color:var(--ac);background:#EEFBF9}.sitem.ok.c1 .done{background:var(--ac)}
+.sitem.ok.c2{border-color:var(--am);background:#FFF8EB}.sitem.ok.c2 .done{background:var(--am)}
+.sitem.ok.c3{border-color:var(--pink);background:#FFF0F7}.sitem.ok.c3 .done{background:var(--pink)}
+
+/* --- صندوق أيزنهاور --- */
+.mx{display:grid;grid-template-columns:420px 1fr;gap:28px;flex:1;min-height:0}
+.mx-pool{display:flex;flex-direction:column;gap:9px}
+.mx-item{font-family:inherit;font-size:22px;font-weight:800;padding:9px 16px;border-radius:16px;border:3px solid var(--line);background:#fff;text-align:right;color:var(--ink);transition:all .2s;box-shadow:0 4px 0 #E6DDFF}
+.mx-item:hover{border-color:var(--p2)}
+.mx-item.sel{border-color:var(--p);background:var(--pl);transform:translateX(-10px)}
+.mx-item.used{display:none}
+.mx-grid{display:grid;grid-template-columns:110px 1fr 1fr;grid-template-rows:54px 1fr 1fr;gap:10px}
+.mx-h{display:grid;place-items:center;font-size:25px;font-weight:900;color:#fff;background:var(--pd);border-radius:14px}
+.mx-h.v{writing-mode:vertical-rl;font-size:27px}
+.mx-q{border-radius:20px;border:3px dashed #CFC2F5;background:#fff;padding:10px 12px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all .2s;overflow:hidden;text-align:right;font-family:inherit}
+.mx-q:hover{border-color:var(--p2);background:#FCFAFF}
+.mx-q .qa{font-size:21px;font-weight:900;color:var(--mut)}
+.mx-q .chip{font-size:19px;padding:3px 12px;align-self:flex-start;animation:pop .4s}
+.mx-q.q-iu{background:#FFF5F5}.mx-q.q-in{background:#F5FBFF}.mx-q.q-nu{background:#FFFBEF}.mx-q.q-nn{background:#F7F7F7}
+
+/* --- العلاقات --- */
+.dp{display:grid;grid-template-columns:340px 1fr;gap:28px;flex:1;min-height:0}
+.dp-tabs{display:flex;flex-direction:column;gap:14px}
+.dp-tab{font-family:inherit;font-size:27px;font-weight:900;padding:14px 20px;border-radius:20px;border:3px solid var(--line);background:#fff;color:var(--ink);text-align:right;transition:all .2s;box-shadow:0 5px 0 #E6DDFF}
+.dp-tab small{display:block;font-size:18px;color:var(--mut);font-weight:700;direction:ltr;text-align:right}
+.dp-tab:hover{border-color:var(--p2)}
+.dp-tab.on{background:var(--p);border-color:var(--p);color:#fff;box-shadow:0 5px 0 var(--pd)}.dp-tab.on small{color:#E9DDFF}
+.dp-view{padding:20px 30px;display:flex;flex-direction:column;gap:12px}
+.dp-view h3{margin:0;font-size:38px;color:var(--pd)}
+.dp-view h3 small{font-size:22px;color:var(--mut);margin-inline-start:12px}
+.dp-rule{font-size:28px;font-weight:700;line-height:1.6;margin:0}
+.dp-svg{width:100%;height:230px;background:#FAFAFF;border-radius:18px;border:2px solid #EEE7FF}
+.dp-svg .ba{animation:rise .5s both}.dp-svg .bb{animation:rise .5s .25s both}.dp-svg .ar{animation:inFade .5s .6s both}
+.dp-ex{font-size:25px;line-height:1.7;font-weight:700}
+
+/* =========================================================
+   8) محاكي جانت بروجكت (GanttProject)
+   ========================================================= */
+.slide.gslide{padding:12px 16px 54px}
+.gslide .shead{margin-bottom:8px;gap:14px}
+.gslide .stitle{font-size:30px}
+.gslide .tag{font-size:18px;padding:3px 16px}
+.gp{flex:1;min-height:0;display:flex;flex-direction:column;background:#f2f2f2;border:1px solid #9a9a9a;border-radius:10px;overflow:hidden;
+  box-shadow:0 16px 40px rgba(0,0,0,.16);font-family:'Cairo',Tahoma,sans-serif;font-size:16px;color:#222;position:relative}
+.gp button{font-family:inherit;cursor:pointer;color:inherit}
+.gp b{color:inherit}
+.gp-title{height:32px;flex:none;background:#fff;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid #ddd;font-size:14px;direction:ltr;color:#333}
+.gp-logo{width:18px;height:18px;border-radius:50%;background:conic-gradient(#f5b800 0 25%,#444 0 50%,#f5b800 0 75%,#444 0);flex:none}
+.gp-win{margin-left:auto;display:flex;gap:22px;color:#666;font-size:15px}
+.gp-menu{height:34px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px;background:#fff;border-bottom:1px solid #ddd}
+.gp-mi{border:none;background:none;padding:3px 12px;font-size:15px;font-weight:700;border-radius:4px}
+.gp-mi small{font-size:11px;color:#888;font-weight:600}
+.gp-mi:hover,.gp-mi.open{background:#e3ebf7}
+.gp-sp{flex:1}
+.gp-pill{border:1.5px solid #cdbfff !important;background:#f4f0ff;color:var(--p) !important;font-weight:800;font-size:14px;padding:2px 12px;border-radius:999px;margin-inline-start:6px}
+.gp-pill:hover{background:#e9e1ff}
+.gp-pill.pulse{animation:gpPulse 1.6s ease-in-out infinite}
+@keyframes gpPulse{50%{box-shadow:0 0 0 6px rgba(139,92,246,.25)}}
+.gp-tool{height:56px;flex:none;display:flex;align-items:center;gap:4px;padding:0 12px;background:linear-gradient(#fbfbfb,#ececec);border-bottom:1px solid #c8c8c8}
+.gp-grp{display:flex;gap:2px;align-items:center}
+.gp-tb{width:44px;height:44px;border:1px solid transparent;border-radius:6px;background:none;font-size:23px;display:grid;place-items:center;transition:background .15s}
+.gp-tb:hover{background:#dbe5f3;border-color:#a8b8d8}
+.gp-tb:active{transform:scale(.92)}
+.gp-tb:disabled{opacity:.3;pointer-events:none}
+.gp-sep{width:1px;height:34px;background:#c8c8c8;margin:0 8px}
+.gp-search{margin-inline-start:auto;width:250px;height:32px;border:1px solid #aaa;border-radius:4px;padding:0 10px;font-family:inherit;font-size:14px;background:#fff}
+.gp-tabs{height:30px;flex:none;display:flex;align-items:flex-end;gap:4px;padding:0 10px;background:#ececec;border-bottom:1px solid #9d9d9d}
+.gp-tab{border:1px solid #9d9d9d;border-bottom:none;background:#dcdcdc;padding:1px 14px;font-size:14px;font-weight:700;border-radius:6px 6px 0 0}
+.gp-tab.on{background:#fff;position:relative;top:1px;padding-bottom:3px}
+.gp-main{flex:1;min-height:0;display:grid;grid-template-columns:500px 1fr;background:#fff}
+.gp-side{display:flex;flex-direction:column;border-left:3px solid #8f8f8f;min-height:0;min-width:0}
+.gp-stool,.gp-ctool{height:34px;flex:none;display:flex;align-items:center;gap:2px;padding:0 6px;background:#f5f5f5;border-bottom:1px solid #ccc;font-size:14px;white-space:nowrap}
+.gp-stool button,.gp-ctool button{height:28px;border:1px solid transparent;border-radius:4px;background:none;font-size:14px;font-weight:700;padding:0 8px}
+.gp-stool button:hover,.gp-ctool button:hover{background:#dbe5f3;border-color:#a8b8d8}
+.gp-stool button:disabled{opacity:.3;pointer-events:none}
+.gp-ctool button.on{background:#ffe0e0;border-color:#e59b9b;color:#b3261e}
+.gp-ctool button.on2{background:#e6e6e6;border-color:#999}
+.gp-banner{height:34px;flex:none;display:flex;align-items:center;gap:6px;padding:0 14px;direction:ltr;justify-content:flex-start;
+  background:linear-gradient(90deg,rgba(255,255,255,.95) 0 120px,rgba(255,255,255,0) 190px),
+  repeating-linear-gradient(60deg,#4f9d95 0 14px,#7fc2b8 14px 28px);border-bottom:1px solid #999}
+.gp-banner span{font:900 italic 20px 'Segoe UI',Tahoma,sans-serif;color:#e8762b;letter-spacing:1px}
+.gp-banner i{font:italic 14px Georgia,serif;color:#555}
+.gp-th,.gp-tr{display:grid;grid-template-columns:1fr 118px 118px}
+.gp-th{height:30px;flex:none;background:linear-gradient(#f6f6f6,#dcdcdc);border-bottom:1px solid #9d9d9d;font-size:13.5px;font-weight:800}
+.gp-th div{display:flex;align-items:center;justify-content:center;border-left:1px solid #c9c9c9;overflow:hidden;white-space:nowrap}
+.gp-body{flex:1;min-height:0;overflow:auto;position:relative;scrollbar-width:thin}
+.gp-tr{height:32px;border-bottom:1px solid #ededed;font-size:15px}
+.gp-tr>div{display:flex;align-items:center;padding:0 8px;overflow:hidden;white-space:nowrap;border-left:1px solid #f1f1f1}
+.gp-tr .d{justify-content:center;font-size:14px;direction:ltr}
+.gp-tr .n{gap:4px}
+.gp-tr.sel{background:#5d5d5d;color:#fff}
+.gp-tr.hit:not(.sel){background:#fff3bf}
+.gp-tr.par .n{font-weight:900}
+.gp-tr.sub{color:#666;font-size:14px}
+.gp-tr.sub.sel{color:#fff}
+.gp-tog{width:18px;flex:none;display:inline-grid;place-items:center;cursor:pointer;color:#555;font-size:13px}
+.gp-tr.sel .gp-tog{color:#fff}
+.gp-ico{font-size:12px}
+.gp-tr input.gp-ed{width:100%;height:24px;font-family:inherit;font-size:15px;border:2px solid #f0a020;padding:0 6px;color:#222}
+.gp-tr select.gp-rsel{font-family:inherit;font-size:14px;border:1px solid transparent;background:transparent;width:100%;color:inherit}
+.gp-tr select.gp-rsel:hover{border-color:#aaa;background:#fff;color:#222}
+.gp-chart{display:flex;flex-direction:column;min-height:0;min-width:0;direction:ltr}
+.gp-cwrap{flex:1;min-height:0;overflow:auto;position:relative;scrollbar-width:thin}
+.gp-head{position:sticky;top:0;z-index:3;background:#fafafa}
+.gp-hm{height:30px;position:relative;border-bottom:1px solid #d0d0d0;background:#f7f7f7}
+.gp-hd{height:34px;position:relative;border-bottom:1px solid #9d9d9d;background:#fcfcfc}
+.gp-hm span{position:absolute;top:4px;font-size:13.5px;font-weight:800;white-space:nowrap;padding-left:6px;border-left:1px solid #bbb}
+.gp-hd span{position:absolute;top:0;height:34px;display:grid;place-items:center;font-size:12.5px;border-left:1px solid #ddd;color:#444}
+.gp-hd span.we{background:#ececec;color:#999}
+.gp-canvas{position:relative;background-image:repeating-linear-gradient(#fff 0 31px,#ededed 31px 32px)}
+.gp-we{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.045)}
+.gp-today{position:absolute;top:0;bottom:0;width:2px;background:#e53935;opacity:.7}
+.gp-bar{position:absolute;height:16px;background:var(--c,#8fb0d3);border:1px solid #5c80aa;border-radius:3px;cursor:grab;touch-action:none;z-index:2}
+.gp-bar:active{cursor:grabbing}
+.gp-bar .pg{position:absolute;left:0;top:5px;height:5px;background:#1d1d1d;pointer-events:none}
+.gp-bar.crit{background:#ff9d9d;border-color:#c62828}
+.gp-bar.sel,.gp-ms.sel{outline:2px solid #222;outline-offset:1px}
+.gp-bar .rz{position:absolute;right:-4px;top:-2px;bottom:-2px;width:9px;cursor:ew-resize}
+.gp-bar .lk{position:absolute;right:-19px;top:1px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid #444;opacity:0;cursor:crosshair;transition:opacity .15s}
+.gp-bar:hover .lk,.gp-ms:hover .lk{opacity:1}
+.gp-ms{position:absolute;width:16px;height:16px;z-index:2;cursor:grab;touch-action:none}
+.gp-ms::before{content:"";position:absolute;inset:2px;transform:rotate(45deg);background:#5aa7d4;border:1px solid #2c6f98}
+.gp-ms.crit::before{background:#ff8a80;border-color:#c62828}
+.gp-ms .lk{position:absolute;right:-16px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid #444;opacity:0;cursor:crosshair}
+.gp-sum{position:absolute;height:6px;background:#6f97c4;z-index:2;cursor:default}
+.gp-sum::before,.gp-sum::after{content:"";position:absolute;top:0;width:0;height:0;border-top:8px solid #6f97c4}
+.gp-sum::before{left:0;border-right:7px solid transparent}
+.gp-sum::after{right:0;border-left:7px solid transparent}
+.gp-sum.crit{background:#e57373}.gp-sum.crit::before,.gp-sum.crit::after{border-top-color:#e57373}
+.gp-base{position:absolute;height:5px;background:#9e9e9e;border-radius:2px;opacity:.75;z-index:1}
+.gp-lbl{position:absolute;font-size:12.5px;color:#444;white-space:nowrap;z-index:2;pointer-events:none;direction:rtl}
+.gp-arrows{position:absolute;left:0;top:0;pointer-events:none;z-index:1;overflow:visible}
+.gp-status{height:26px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;background:#efefef;border-top:1px solid #c8c8c8;font-size:12.5px;color:#555;direction:ltr}
+.gp-sw{width:30px;height:16px;border-radius:999px;background:#ccc;position:relative}
+.gp-sw::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}
+.gp-st{margin-left:auto;direction:rtl}
+.gp-layer{position:absolute;inset:0;pointer-events:none;z-index:10}
+.gp-layer>*{pointer-events:auto}
+/* القوائم */
+.gp-cm{position:absolute;z-index:30;background:#fff;border:1px solid #9a9a9a;box-shadow:0 8px 22px rgba(0,0,0,.22);min-width:230px;padding:4px 0;font-size:15px;border-radius:4px}
+.gp-cm button{display:flex;gap:10px;width:100%;border:none;background:none;padding:5px 14px;text-align:right;align-items:center;font-size:15px}
+.gp-cm button .k{margin-inline-start:auto;color:#888;font-size:12px;direction:ltr}
+.gp-cm button .i{width:22px;text-align:center}
+.gp-cm button:hover{background:#3a78c9;color:#fff}.gp-cm button:hover .k{color:#dde}
+.gp-cm button:disabled{color:#b5b5b5;background:none;pointer-events:none}
+.gp-cm hr{border:none;border-top:1px solid #ddd;margin:4px 0}
+/* النوافذ */
+.gp-ov{position:absolute;inset:0;background:rgba(20,20,30,.28);display:grid;place-items:center;z-index:20}
+.gp-dlg{max-height:94%;background:#f0f0f0;border:1px solid #7d7d7d;border-radius:6px;box-shadow:0 22px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;animation:pop .25s}
+.gp-dh{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;background:#fff;border-bottom:1px solid #ccc;font-weight:800;font-size:16px;border-radius:6px 6px 0 0}
+.gp-dh .x{margin-inline-start:auto;border:none;background:none;font-size:18px;color:#666}
+.gp-dtabs{display:flex;gap:3px;padding:8px 10px 0;border-bottom:1px solid #9d9d9d;flex:none}
+.gp-dtab{border:1px solid #9d9d9d;border-bottom:none;background:#dcdcdc;padding:2px 14px;font-size:14px;font-weight:700;border-radius:6px 6px 0 0}
+.gp-dtab.on{background:#fff;position:relative;top:1px}
+.gp-dbody{padding:14px 18px;overflow:auto;flex:1;min-height:330px;background:#fff}
+.gp-f{display:grid;grid-template-columns:190px 1fr;gap:9px 12px;align-items:center;font-size:15px}
+.gp-dlg input[type=text],.gp-dlg input[type=number],.gp-dlg input[type=date],.gp-dlg input[type=email],.gp-dlg select,.gp-dlg textarea{
+  font-family:inherit;font-size:15px;padding:4px 8px;border:1px solid #a5a5a5;border-radius:3px;background:#fff;color:#222;min-width:0}
+.gp-dlg input[readonly]{background:#f3f3f3;color:#777}
+.gp-dlg input[type=checkbox],.gp-dlg input[type=radio]{width:18px;height:18px;accent-color:#3a78c9}
+.gp-yel{background:#f7c400;padding:4px 12px;font-weight:800;margin-bottom:12px;font-size:15px}
+.gp-dfoot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #ccc;flex:none}
+.gp-btn{min-width:92px;padding:4px 14px;border:1px solid #8a8a8a;background:linear-gradient(#fff,#e4e4e4);border-radius:4px;font-size:15px;font-weight:700}
+.gp-btn:hover{background:linear-gradient(#fff,#d7e6fa)}
+.gp-btn.pri{border-color:#3a6ea5}
+.gp-tbl{width:100%;border-collapse:collapse;font-size:14px}
+.gp-tbl th,.gp-tbl td{border:1px solid #cfcfcf;padding:4px 6px;text-align:center}
+.gp-tbl th{background:#eee;font-weight:800}
+.gp-tbl select,.gp-tbl input{width:100%}
+.gp-mini{font-size:13px;color:#777}
+.gp-rad{display:flex;flex-direction:column;gap:10px;font-size:16px}
+.gp-rad label{display:flex;gap:10px;align-items:center;padding:8px 12px;border:1px solid #ddd;border-radius:6px;background:#fafafa}
+.gp-rad label.dis{opacity:.45}
+.gp-roles{display:flex;flex-direction:column;border:1px solid #bbb;max-height:250px;overflow:auto}
+.gp-roles div{display:flex;justify-content:space-between;align-items:center;padding:3px 10px;border-bottom:1px solid #eee;font-size:15px}
+.gp-roles div button{border:none;background:none;color:#c33;font-size:14px}
+/* المهام والجولة والتنبيهات */
+.gp-mis{position:absolute;top:196px;right:514px;width:430px;background:#fff;border:2px solid var(--p2);border-radius:16px;box-shadow:0 14px 34px rgba(76,40,160,.25);z-index:15;padding:10px 14px 12px;font-size:16px;direction:rtl}
+.gp-mis h4{margin:0 0 6px;font-size:18px;color:var(--p);display:flex;align-items:center;gap:8px}
+.gp-mis h4 button{margin-inline-start:auto;border:none;background:none;font-size:16px;color:#888}
+.gp-mis ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.gp-mis li{display:flex;gap:8px;align-items:flex-start;line-height:1.45;padding:3px 4px;border-radius:8px}
+.gp-mis li .ck{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid #cbbcf6;display:grid;place-items:center;font-size:13px;color:transparent;margin-top:2px}
+.gp-mis li.ok{color:#0e7a55;background:#effcf6}
+.gp-mis li.ok .ck{background:var(--ok);border-color:var(--ok);color:#fff}
+.gp-mis .bar{height:8px;border-radius:999px;background:#eee;margin-top:8px;overflow:hidden}
+.gp-mis .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--p));transition:width .4s}
+.gp-toast{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);background:#2a1b4d;color:#fff;padding:8px 24px;border-radius:999px;font-weight:800;font-size:17px;z-index:40;white-space:nowrap;animation:gpToast 2.6s ease forwards;pointer-events:none}
+@keyframes gpToast{0%{opacity:0;transform:translate(-50%,16px)}10%{opacity:1;transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0}}
+.gp-tb-badge{position:absolute;z-index:25;width:32px;height:32px;border-radius:50%;background:#1f7ae0;color:#fff;font-weight:900;font-size:16px;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;animation:pop .4s both}
+.gp-tb-badge:hover,.gp-tb-badge.on{background:#f59e0b}
+.gp-tip{position:absolute;z-index:26;background:#fff;border:3px solid #1f7ae0;border-radius:16px;padding:10px 16px;font-size:18px;font-weight:800;width:330px;color:#1b3a5c;box-shadow:0 12px 30px rgba(0,0,0,.25);line-height:1.6;animation:pop .25s;direction:rtl}
+.gp-link-line{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
+
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="progress"></div>
+  <div id="hint">Space = التالي &nbsp;|&nbsp; ← → للتنقل &nbsp;|&nbsp; ت = تصفيق &nbsp;|&nbsp; F = ملء الشاشة</div>
+  <div id="slides"></div>
+  <div id="fx"></div>
+  <!-- شريط التحكم -->
+  <div id="bar">
+    <button id="nextBtn" title="التالي (→ أو Space)">→</button>
+    <span class="count" id="count">١ / ١</span>
+    <button id="prevBtn" title="السابق (←)">←</button>
+    <span class="sep"></span>
+    <button class="clap" id="clapBtn" title="تصفيق (ت)">👏</button>
+    <button id="fsBtn" title="ملء الشاشة (F)">⛶</button>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   ✏️✏️✏️  إعدادات المحتوى — عدّلي الدرس من هنا فقط  ✏️✏️✏️
+   --------------------------------------------------------------------------
+   • LESSON: بيانات الدرس العامة.
+   • SLIDES: قائمة الشرائح بالترتيب. لإضافة شريحة انسخي أي كائن { ... } والصقيه.
+     لحذف شريحة احذفي الكائن كاملًا. عدد الشرائح يُحسب تلقائيًا.
+   • type: نوع الشريحة (prep, flip, predict, title, list, equation, sort, cards,
+     triangle, tps, order, mcq, tf, brainstorm, challenge, groups, builder,
+     review, exit, closing)
+   • anim: حركة الدخول: "fade" أو "slide" أو "zoom"
+   • يمكن استخدام <b>كلمة</b> لتمييز كلمة باللون البنفسجي.
+   ========================================================================== */
+
+const LESSON = {
+  subject : "تقنية رقمية ٣",
+  unit    : "الوحدة الأولى",
+  number  : "الدرسان الثاني والثالث",
+  title   : "بناء خطة المشروع وإدارة المهام"
+};
+
+const SLIDES = [
+
+  /* ───────────── ١) التحضير ───────────── */
+  { type:"prep", anim:"zoom", tag:"🌸 التحضير",
+    greeting:"أهلًا بمديرات المشاريع!",
+    sub:"اليوم نحوّل الخطة من ورق… إلى برنامج 💻",
+    rules:["👂 أُنصت باهتمام","✋ أرفع يدي للمشاركة","🤝 أتعاون مع مجموعتي","💻 أطبّق بنفسي"] },
+
+  /* ───────────── ٢) مراجعة الدرس السابق والربط ───────────── */
+  { type:"flip", anim:"slide", tag:"🔁 مراجعة الدرس السابق",
+    title:"تذكّري… أساسيات تخطيط المشروع",
+    note:"اسألي الطالبات أولًا ثم اقلبي البطاقة 👆",
+    cards:[
+      {icon:"💡", front:"المشروع",        back:"مهام + زمن محدد + ميزانية ← منتج أو خدمة", ex:"مثال: مسرحية المدرسة"},
+      {icon:"🔺", front:"مثلث الإدارة",   back:"النطاق • الزمن • التكلفة", ex:"وفي المركز: الجودة"},
+      {icon:"🔄", front:"دورة الحياة",     back:"البدء ← التخطيط ← التنفيذ ← المراقبة ← الإنهاء", ex:"٥ مراحل"},
+      {icon:"👩‍💼", front:"مدير المشروع", back:"يضع الخطة ويوزّع المهام ويتابع الجدول الزمني", ex:"المسؤول الأول عن النجاح"} ],
+    bridgeBtn:"🔗 اربطي بدرس اليوم",
+    bridge:"خطّطنا على الورق… واليوم نبني الخطة <b>ونؤتمتها</b> في برنامج <b>جانت بروجكت</b> وندير مهامها 🚀" },
+
+  /* ───────────── ٣) التهيئة ───────────── */
+  { type:"predict", anim:"fade", tag:"🔮 التهيئة • ماذا تتوقعين؟",
+    title:"مسرحية المدرسة 🎭",
+    icon:"🎭",
+    scenario:"مسرحية فيها <b>١٢ مهمة</b> و<b>١٢ عضوة</b> في الفريق، ويجب أن تكون جاهزة خلال <b>شهر</b>… ومديرة المشروع تكتب كل شيء في <b>جدول ورقي!</b>",
+    question:"ماذا تتوقعين أن يحدث؟ 🤔",
+    answers:[ {icon:"📅",text:"صعوبة تعديل التواريخ عند أي تأجيل"},
+              {icon:"🔗",text:"لا نعرف أي مهمة تعتمد على الأخرى"},
+              {icon:"👥",text:"تتداخل مسؤوليات أعضاء الفريق"},
+              {icon:"📊",text:"لا نعرف نسبة الإنجاز الحقيقية"} ],
+    revealBtn:"🔮 اكشفي توقّعًا",
+    conclusion:"💡 الحل: <b>برامج إدارة المشروعات</b> و<b>مخطط جانت</b> لأتمتة الخطة!" },
+
+  /* ───────────── ٤) العنوان ───────────── */
+  { type:"title", anim:"zoom",
+    sub:"بناء وأتمتة خطة المشروع • إدارة المهام 📊",
+    icons:["📊","🗓️","🔗","◆","👩‍💼","⏱️"],
+    note:"📝 سجّلي عنوان الدرس في دفترك" },
+
+  /* ───────────── ٥) الأهداف ───────────── */
+  { type:"list", anim:"slide", tag:"🎯 أهداف الدرس",
+    title:"في نهاية الدرس ستكونين قادرة على:",
+    items:[ {icon:"💻",text:"التمييز بين برامج إدارة المشروعات"},
+            {icon:"📊",text:"إنشاء خطة مشروع في جانت بروجكت"},
+            {icon:"🧩",text:"إضافة المهام والمهام الفرعية وأولوياتها"},
+            {icon:"🅰️",text:"تحديد الأولويات بطريقتي ABC وأيزنهاور"},
+            {icon:"◆",text:"التمييز بين المَعلَم الرئيس والموعد النهائي"},
+            {icon:"🔗",text:"إضافة الموارد والتبعيات وتحديث التقدم"} ] },
+
+  /* ───────────── ٦) برامج إدارة المشروعات ───────────── */
+  { type:"sort", anim:"fade", tag:"💻 برامج إدارة المشروعات",
+    title:"سحابية تعاونية أم مكتبية؟",
+    question:"أهم معيار لاختيار البرنامج: <b>حجم الفريق وحجم المشروع</b>. صنّفي البرامج:",
+    cats:[ {id:"a",label:"سحابية",icon:"☁️"}, {id:"b",label:"مكتبية",icon:"🖥️"} ],
+    items:[ {icon:"📋",text:"مايكروسوفت بلانر",cat:"a"},
+            {icon:"📊",text:"جانت بروجكت",cat:"b"},
+            {icon:"🗂️",text:"تريللو Trello",cat:"a"},
+            {icon:"🏗️",text:"مايكروسوفت بروجكت",cat:"b"},
+            {icon:"🐞",text:"جيرا Jira",cat:"a"},
+            {icon:"✅",text:"أسانا Asana",cat:"a"} ],
+    doneMsg:"💡 سنستخدم <b>جانت بروجكت</b>: مجاني ويناسب المشاريع متوسطة الحجم والمهام المحددة بالأيام" },
+
+  /* ───────────── ٧) مخطط جانت ───────────── */
+  { type:"cards", anim:"slide", tag:"📊 مخطط جانت",
+    title:"ما مخطط جانت (Gantt chart)؟",
+    intro:"<b>رسم تخطيطي لجدول زمني</b> يعرض المهام كأشرطة على خط الزمن. يساعد في:",
+    cols:3,
+    cards:[ {icon:"🗺️",title:"التخطيط",text:"ترتيب المهام ومددها وتواريخها"},
+            {icon:"🤝",title:"التنسيق",text:"معرفة من يعمل على ماذا ومتى"},
+            {icon:"📈",title:"التتبّع",text:"متابعة تقدّم كل مهمة حتى نهايتها"} ],
+    footer:"💡 كل <b>شريط</b> = مهمة • <b>طوله</b> = مدتها • <b>موضعه</b> = متى تبدأ وتنتهي" },
+
+  /* ───────────── ٨) جولة في البرنامج ───────────── */
+  { type:"gantt", anim:"fade", tag:"🔎 لاحظ واكتشف",
+    title:"جولة في واجهة جانت بروجكت — اضغطي على الأرقام الزرقاء",
+    start:"full", tour:true, missions:[] },
+
+  /* ───────────── ٩) خطوات مشروع المسرحية ───────────── */
+  { type:"list", anim:"slide", tag:"🎭 مشروع المسرحية",
+    title:"خطوات بناء خطة المسرحية في جانت بروجكت",
+    items:[ {icon:"١",text:"اضبطي خصائص المشروع"},
+            {icon:"٦",text:"أضيفي موارد للمشروع"},
+            {icon:"٢",text:"أدرجي المهام وغيّري خصائصها"},
+            {icon:"٧",text:"حدّدي مدير المشروع"},
+            {icon:"٣",text:"أنشئي مهامًا فرعية"},
+            {icon:"٨",text:"خصّصي الموارد للمهام"},
+            {icon:"٤",text:"أضيفي معالم المشروع"},
+            {icon:"٩",text:"أضيفي العلاقات بين المهام"},
+            {icon:"٥",text:"حدّدي المواعيد النهائية"},
+            {icon:"١٠",text:"غيّري تاريخ المهمة إذا لزم"} ] },
+
+  /* ───────────── ١٠) التخطيط الزمني ───────────── */
+  { type:"cards", anim:"slide", tag:"⏰ التخطيط الزمني",
+    title:"التخطيط الزمني وتحديد الأولويات",
+    intro:"يأتي بعد تحديد النطاق. ولا يمكن مثلًا تصميم <b>المشهد والأزياء</b> قبل كتابة <b>نص المسرحية!</b> في هذه المرحلة نحتاج إلى:",
+    cols:3,
+    cards:[ {icon:"🔢",title:"تسلسل منطقي",text:"وضع المهام بترتيب يعتمد بعضها على بعض"},
+            {icon:"⏳",title:"تقدير المدة",text:"تقدير مدة كل مهمة بالاتفاق مع الفريق"},
+            {icon:"📄",title:"وثائق واضحة",text:"تساعد في وضع جدول زمني للمشروع"} ],
+    footer:"💡 إذا صعُب تقدير المدة: نقدّر <b>أفضل</b> و<b>أسوأ</b> سيناريو ونأخذ حلًا وسطًا" },
+
+  /* ───────────── ١١) طريقة ABC ───────────── */
+  { type:"sort", anim:"fade", tag:"🅰️ طريقة تحليل ABC",
+    title:"صنّفي مهام المسرحية بطريقة ABC",
+    question:"<b>A</b> مهمة وعاجلة • <b>B</b> مهمة وغير عاجلة • <b>C</b> غير مهمة وغير عاجلة",
+    cats:[ {id:"a",label:"A",icon:"🔴"}, {id:"b",label:"B",icon:"🟡"}, {id:"c",label:"C",icon:"🟢"} ],
+    items:[ {icon:"✍️",text:"كتابة نص المسرحية (العرض قريب)",cat:"a"},
+            {icon:"🎨",text:"تصميم ملصق للعرض القادم بعد شهر",cat:"b"},
+            {icon:"🎀",text:"اختيار لون بطاقات الدعوة",cat:"c"},
+            {icon:"🏛️",text:"حجز المسرح قبل انتهاء المهلة غدًا",cat:"a"},
+            {icon:"🎭",text:"التعرّف على الشخصيات الثانوية",cat:"b"},
+            {icon:"🪴",text:"تزيين غرفة الانتظار",cat:"c"} ],
+    doneMsg:"💡 يمكن أن يتضمن تحليل ABC أكثر من ثلاث مجموعات" },
+
+  /* ───────────── ١٢) صندوق أيزنهاور ───────────── */
+  { type:"matrix", anim:"zoom", tag:"🧮 طريقة أيزنهاور",
+    title:"صندوق أيزنهاور — ضعي كل مهمة في مكانها",
+    hint:"١) اضغطي على المهمة  ٢) ثم اضغطي على المربع المناسب",
+    quads:{ iu:"⚡ نفّذيها فورًا", in:"📅 حدّدي لها موعدًا", nu:"🤝 فوّضيها لغيرك", nn:"🗑️ تجاهليها" },
+    items:[ {text:"مرحلة التخطيط لمشاركة المدرسة",q:"iu"},
+            {text:"الاستعدادات للمسرحية",q:"iu"},
+            {text:"البروفة النهائية",q:"iu"},
+            {text:"تنفيذ مشروع المسرحية",q:"iu"},
+            {text:"التعرّف على الشخصيات غير الرئيسة",q:"in"},
+            {text:"توقّف البروفات",q:"nu"},
+            {text:"تلف الأزياء",q:"nu"},
+            {text:"تغيير اسم المسرحية",q:"nn"} ] },
+
+  /* ───────────── ١٣) تطبيق عملي ١ ───────────── */
+  { type:"gantt", anim:"fade", tag:"🛠️ تطبيق عملي ١",
+    title:"أنشئي خطة مشروع المسرحية بنفسك",
+    start:"empty", tour:false,
+    missions:[ {ev:"projectProps", text:"اضبطي خصائص المشروع: الاسم «عمل مسرحي» والمؤسسة «المدرسة» (المشروع ← خصائص)"},
+               {ev:"weekend",      text:"حدّدي عطلة نهاية الأسبوع: الجمعة والسبت (تبويب التقويم)"},
+               {ev:"addTask",      text:"أضيفي مهمة جديدة باسم «الإنتاج» (🕘 أو Ctrl+T)"},
+               {ev:"duration",     text:"غيّري مدة مهمة من «خصائص المهمة» (ضغطة مزدوجة على المهمة)"},
+               {ev:"tasks5",       text:"أضيفي ٥ مهام على الأقل من مهام المسرحية"},
+               {ev:"indent",       text:"أنشئي مهمة فرعية باستخدام «مسافة بادئة» ⇥"},
+               {ev:"highest",      text:"اجعلي أولوية مهمة «الأعلى» (Highest)"},
+               {ev:"save",         text:"احفظي المشروع 💾"} ] },
+
+  /* ───────────── ١٤) فكّري زاوجي شاركي ───────────── */
+  { type:"tps", anim:"fade", tag:"👭 فكّري – زاوجي – شاركي",
+    title:"مسابقة الروبوت 🤖",
+    question:"لو كنتِ مديرة مشروع <b>مسابقة الروبوت</b>… أيّ طريقة لتحديد الأولويات ستختارين؟ ولماذا؟",
+    phases:[ {icon:"🤔",label:"فكّري بمفردك",sec:60},
+             {icon:"👭",label:"زاوجي زميلتك",sec:90},
+             {icon:"📢",label:"شاركي الصف",sec:120} ],
+    answerBtn:"💡 إجابة مقترحة",
+    answer:[ {title:"🅰️ طريقة ABC", points:["تصنّف المهام إلى مجموعات A و B و C","سهلة وسريعة للقوائم الطويلة","يمكن إعادة تصنيف B و C لاحقًا"]},
+             {title:"🧮 طريقة أيزنهاور", points:["أربعة مربعات: مهم/عاجل","تحدد الإجراء: نفّذ • حدّد موعدًا • فوّض • تجاهل","مناسبة عند وجود فريق يمكن التفويض له"]} ] },
+
+  /* ───────────── ١٥) سؤال ───────────── */
+  { type:"mcq", anim:"fade", tag:"❓ اختاري الإجابة الصحيحة",
+    title:"مهمة فرعية 🧩",
+    icon:"⇥",
+    question:"أردنا جعل «الموسيقى» و«المشهد» و«الأزياء» مهامًا فرعية لمهمة «الإخراج». أيّ أمر نستخدم؟",
+    options:[ {icon:"⇥",text:"مسافة بادئة (Indent)"}, {icon:"⇤",text:"إلغاء المسافة (Unindent)"},
+              {icon:"✖",text:"حذف المهمة (Delete)"}, {icon:"↑",text:"نقل لأعلى (Up)"} ],
+    correct:0,
+    explain:"⇥ المسافة البادئة تجعل المهام المحددة فرعية للمهمة التي فوقها" },
+
+  /* ═══════════════ الدرس الثالث: إدارة المهام ═══════════════ */
+
+  /* ───────────── ١٦) المعلم الرئيس والموعد النهائي ───────────── */
+  { type:"flip", anim:"zoom", tag:"◆ إدارة المهام",
+    title:"المَعلَم الرئيس والموعد النهائي",
+    note:"إدارة المهام ترتبط بإدارة الوقت… اقلبي البطاقتين 👆",
+    cols:2,
+    cards:[
+      {icon:"◆", front:"المَعلَم الرئيس Milestone", back:"نقطة تمثّل حدثًا رئيسًا في دورة حياة المشروع، وعند الوصول إليه ينتقل المشروع لمرحلة أخرى", ex:"مثال: بروفات اللباس في المسرحية"},
+      {icon:"⏰", front:"الموعد النهائي Deadline", back:"آخر وقت أو تاريخ يمكن فيه إكمال مهمة أو مشروع", ex:"مثال: العرض الأول • يظهر في عمود «تاريخ الانتهاء»"} ],
+    bridgeBtn:"💡 ما الفرق؟",
+    bridge:"المَعلَم <b>حدث مهم نمرّ به</b> (مدته صفر ◆)… والموعد النهائي <b>حدّ زمني</b> يجب إنهاء العمل قبله" },
+
+  /* ───────────── ١٧) ميزات الموعد النهائي ───────────── */
+  { type:"cards", anim:"slide", tag:"⏰ الموعد النهائي",
+    title:"ميزات تحديد الموعد النهائي",
+    cols:5,
+    cards:[ {icon:"📆",title:"جدول للإنتاجية",text:"يحدد جدولًا معينًا للإنتاجية"},
+            {icon:"🎯",title:"الانضباط",text:"يحسّن الانضباط وأخلاقيات العمل"},
+            {icon:"🏆",title:"الإنجاز",text:"يوفّر إحساسًا هائلًا بالإنجاز"},
+            {icon:"🐢",title:"لا مماطلة",text:"يقلل التأجيل والمماطلة"},
+            {icon:"⚖️",title:"لا إفراط",text:"يمنع جدولة أعمال أكثر من الإمكانات"} ],
+    footer:"⚠️ عند تحديده: يكون <b>واقعيًا</b> • نترك <b>هامشًا للخطأ</b> • نُعلم الفريق • نتأكد من <b>كفاية الموارد</b>" },
+
+  /* ───────────── ١٨) العلاقات بين المهام ───────────── */
+  { type:"deps", anim:"slide", tag:"🔗 لاحظ واكتشف",
+    title:"العلاقات (التبعيات) بين المهام",
+    types:[
+      {id:"FS", name:"النهاية للبداية", en:"Finish to Start", rule:"يجب <b>إنهاء</b> المهمة الأولى قبل <b>بدء</b> المهمة التالية.", ex:"🧱 لا يمكن البدء في طلاء الجدار الداخلي حتى الانتهاء من بنائه.<br>🎭 لا يمكن قراءة السيناريو قبل اختيار طاقم التمثيل."},
+      {id:"FF", name:"النهاية للنهاية", en:"Finish to Finish", rule:"يشترط أن <b>تنتهي</b> مهمة ما لتنتهي مهمة أخرى (تنتهيان معًا).", ex:"🔍 لا يمكن إتمام الفحص النهائي حتى تنتهي جميع مهام التجديد."},
+      {id:"SS", name:"البداية للبداية", en:"Start to Start", rule:"يجب أن <b>تبدأ</b> مهمة ما لتبدأ مهمة أخرى (تبدآن معًا).", ex:"⚡ لا يمكن البدء بإعادة الأسلاك الكهربائية حتى تبدأ عملية الهدم."},
+      {id:"SF", name:"البداية للنهاية", en:"Start to Finish", rule:"يجب أن <b>تبدأ</b> مهمة ما قبل أن <b>تنتهي</b> المهمة الأخرى.", ex:"🚛 لا يمكن إنهاء إزالة الحطام حتى تبدأ الجولة النهائية والتفتيش."} ],
+    note:"💡 فهم تبعية المهام عنصر أساسي في إدارة <b>المسار الحرج</b> للمشروع" },
+
+  /* ───────────── ١٩) صنّفي العلاقات ───────────── */
+  { type:"sort", anim:"fade", tag:"🧩 صنّفي",
+    title:"ما نوع العلاقة؟",
+    question:"اختاري نوع العلاقة المنطقية لكل موقف:",
+    cats:[ {id:"fs",label:"FS",icon:"⏩"}, {id:"ff",label:"FF",icon:"⏹"}, {id:"ss",label:"SS",icon:"▶"}, {id:"sf",label:"SF",icon:"🔁"} ],
+    items:[ {icon:"🎭",text:"قراءة السيناريو بعد اختيار الطاقم",cat:"fs"},
+            {icon:"🧱",text:"الطلاء بعد انتهاء بناء الجدار",cat:"fs"},
+            {icon:"🔍",text:"الفحص النهائي ينتهي مع انتهاء التجديد",cat:"ff"},
+            {icon:"⚡",text:"الأسلاك تبدأ عندما يبدأ الهدم",cat:"ss"},
+            {icon:"🚛",text:"إزالة الحطام تنتهي عندما يبدأ التفتيش",cat:"sf"},
+            {icon:"✍️",text:"تصميم الأزياء بعد كتابة النص",cat:"fs"} ],
+    doneMsg:"💡 العلاقة الأكثر استخدامًا: <b>النهاية للبداية (FS)</b> وهي الافتراضية في جانت بروجكت" },
+
+  /* ───────────── ٢٠) تطبيق عملي ٢ ───────────── */
+  { type:"gantt", anim:"fade", tag:"🛠️ تطبيق عملي ٢",
+    title:"أديري مهام مشروع المسرحية",
+    start:"play", tour:false,
+    missions:[ {ev:"milestone",  text:"اجعلي «بروفات اللباس» مَعلَمًا رئيسًا ◆ (خصائص المهمة ← Milestone)"},
+               {ev:"role",       text:"أضيفي أدوار الموارد (المشروع ← خصائص ← أدوار الموارد)"},
+               {ev:"resource",   text:"أضيفي موردًا جديدًا 👤 (عضوة في الفريق)"},
+               {ev:"pm",         text:"عيّني دور «مدير المشروع» لإحدى العضوات"},
+               {ev:"assign",     text:"خصّصي موردًا لمهمة «العرض الأول» (تبويب Resources)"},
+               {ev:"dependency", text:"أضيفي تبعية بين مهمتين (تبويب Predecessors أو اسحبي الدائرة ⚪)"},
+               {ev:"progress",   text:"حدّثي تقدّم مهمة «البروفات» إلى ٧٥٪"},
+               {ev:"export",     text:"صدّري المشروع كملف PDF أو صورة (المشروع ← تصدير)"} ] },
+
+  /* ───────────── ٢١) تحدي الدقيقة ───────────── */
+  { type:"challenge", anim:"zoom", tag:"⏱️ تحدي الدقيقة",
+    title:"معالم مشروع تشييد مبنى 🏗️",
+    task:"في مشروع <b>تشييد مبنى</b>… اذكرن خلال دقيقة أكبر عدد من المهام التي تُعدّ <b>مَعلَمًا رئيسًا ◆</b>، مع التعليل!",
+    seconds:60,
+    answersBtn:"🔍 أمثلة مقترحة",
+    answers:["◆ الحصول على رخصة البناء","◆ اكتمال الأساسات","◆ اكتمال الهيكل الخرساني","◆ اجتياز الفحص الهندسي","◆ تسليم المبنى للمالك"] },
+
+  /* ───────────── ٢٢-٢٥) التقييم ───────────── */
+  { type:"mcq", anim:"fade", tag:"📝 التقييم",
+    title:"اختاري الإجابة الصحيحة",
+    icon:"◆",
+    question:"مدة المَعلَم الرئيس (Milestone) في جانت بروجكت ويظهر على شكل معيّن:",
+    options:[ {text:"يوم واحد أو أكثر"}, {text:"صفر (حدث بتاريخ ثابت)"}, {text:"أسبوع كامل"}, {text:"مدة المشروع كله"} ],
+    correct:1 },
+
+  { type:"mcq", anim:"fade", tag:"📝 التقييم",
+    title:"اختاري الإجابة الصحيحة",
+    icon:"📅",
+    question:"أين ترين المواعيد النهائية لمهامك في جانت بروجكت؟",
+    options:[ {text:"عمود الاسم Name"}, {text:"عمود تاريخ البدء Begin date"}, {text:"عمود تاريخ الانتهاء End date"}, {text:"مخطط الموارد"} ],
+    correct:2 },
+
+  { type:"mcq", anim:"fade", tag:"📝 التقييم",
+    title:"اختاري الإجابة الصحيحة",
+    icon:"👤",
+    question:"عند إضافة موارد لمشروع جديد، ما أول دور موجود في النظام تلقائيًا؟",
+    options:[ {text:"المخرج"}, {text:"مدير المشروع"}, {text:"مدير الإنتاج"}, {text:"الممثل"} ],
+    correct:1 },
+
+  { type:"tf", anim:"slide", tag:"✔️✖️ صح أم خطأ",
+    title:"صح أم خطأ؟",
+    items:[ {text:"مخطط جانت رسم تخطيطي لجدول زمني يساعد في التخطيط والتنسيق وتتبع المهام.", answer:true},
+            {text:"في طريقة أيزنهاور نفوّض المهام المهمة والعاجلة لغيرنا.", answer:false, fix:"المهمة والعاجلة ننفذها فورًا، ونفوّض غير المهمة والعاجلة"},
+            {text:"قوة العلاقة «قوي» تجعل تاريخ بدء المهمة التالية يتبع تغيّر تاريخ المهمة الحالية.", answer:true},
+            {text:"لا يمكن تصدير خطة المشروع من جانت بروجكت إلا كملف PDF.", answer:false, fix:"يمكن التصدير PDF أو صورة أو جدول بيانات وغيرها"},
+            {text:"يظهر تقدّم المهمة كخط سميك داخل شريطها في المخطط.", answer:true} ] },
+
+  /* ───────────── ٢٦) مشروع الوحدة ───────────── */
+  { type:"groups", anim:"slide", tag:"🤝 مشروع الوحدة",
+    title:"مشروع الوحدة: خطّطن لمشروع وطني 🇸🇦",
+    scenario:"اختارت كل مجموعة أحد المشاريع الآتية، وستبني خطته كاملة في <b>جانت بروجكت</b>:",
+    minutes:10,
+    groups:[ {icon:"🔌",name:"محطات الشحن",color:"#6C3FD1",task:"تطوير محطات شحن للسيارات الكهربائية في مدينة صغيرة"},
+             {icon:"🚆",name:"شبكة النقل",color:"#14B8A6",task:"توسيع شبكة النقل في المملكة العربية السعودية"},
+             {icon:"🏥",name:"مستشفى جديد",color:"#EC4899",task:"بناء مستشفى جديد في المملكة العربية السعودية"} ],
+    teamworkTitle:"📋 خطوات العمل لكل مجموعة:",
+    teamwork:["١ المتطلبات والمشاركون","٢ المهام الرئيسة والفرعية","٣ جدول مفصّل ومعالم رئيسة","٤ العلاقات بين المهام","٥ الأدوار في جانت بروجكت"] },
+
+  /* ───────────── ٢٧) المراجعة ───────────── */
+  { type:"review", anim:"zoom", tag:"🧭 مراجعة",
+    title:"خريطة الدرسين — اضغطي على كل فرع",
+    center:"بناء الخطة وإدارة المهام",
+    branches:[ {icon:"💻",label:"برامج الإدارة",points:"سحابية: بلانر، تريللو، جيرا، أسانا • مكتبية: جانت بروجكت"},
+               {icon:"📊",label:"مخطط جانت",points:"أشرطة مهام على خط زمني: تخطيط • تنسيق • تتبّع"},
+               {icon:"🅰️",label:"الأولويات",points:"ABC: مجموعات A و B و C • أيزنهاور: مهم/عاجل"},
+               {icon:"◆",label:"المعالم والمواعيد",points:"المَعلَم حدث رئيس • الموعد النهائي آخر تاريخ للإنجاز"},
+               {icon:"🔗",label:"العلاقات",points:"FS • FF • SS • SF — الأشهر: النهاية للبداية"},
+               {icon:"👥",label:"الموارد والتقدم",points:"أدوار • موارد • تخصيص • تقدّم ٪ • تصدير"} ] },
+
+  /* ───────────── ٢٨) التقييم الفوري ───────────── */
+  { type:"exit", anim:"fade", tag:"⚡ التقييم الفوري",
+    title:"كيف تقيّمين مهارتك في جانت بروجكت؟",
+    levels:[ {emoji:"🤩",label:"أستطيع وحدي"}, {emoji:"🙂",label:"أحتاج قليلًا من المساعدة"}, {emoji:"🤔",label:"أحتاج تدريبًا أكثر"} ],
+    ticket:{ title:"🎟️ بطاقة الخروج ٣-٢-١",
+             items:["<b>٣</b> أوامر تعلّمتها في جانت بروجكت","<b>٢</b> فرقان بين المَعلَم والموعد النهائي","<b>١</b> علاقة بين مهمتين من حياتي"] } },
+
+  /* ───────────── ٢٩) الختام ───────────── */
+  { type:"closing", anim:"zoom",
+    emoji:"🏆",
+    title:"أنتنّ مديرات مشاريع! 🌟",
+    message:"الخطة الجيدة ليست ورقة… بل أداة تتابعين بها حلمك خطوة بخطوة حتى يتحقق 💜",
+    homework:"📚 الواجب: تدريب ٤ — أكملي «مشروع منصة إعادة التدوير» في جانت بروجكت (المهام، الأدوار، الموارد، التبعيات)",
+    clapHint:"اضغطي 👏 أو حرف (ت) لنصفّق لأنفسنا!" }
+];
+
+
+/* ==========================================================================
+   🔧 من هنا يبدأ الكود البرمجي — لا حاجة لتعديله
+   ========================================================================== */
+
+/* ---------- أدوات مساعدة ---------- */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const toAr = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+const LETTERS = ["أ","ب","ج","د","هـ","و"];
+const shuffle = a => { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; };
+const head = d => `<div class="shead rv" style="--i:0">${d.tag?`<span class="tag">${d.tag}</span>`:""}${d.title?`<h2 class="stitle">${d.title}</h2>`:""}</div>`;
+let SCALE = 1;
+
+/* ==========================================================================
+   🔊 الأصوات — مولّدة بالكامل عبر Web Audio API (بدون ملفات خارجية)
+   ========================================================================== */
+const Sound = {
+  ctx:null, master:null, noise:null,
+  init(){
+    if(!this.ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain(); this.master.gain.value = .9;
+      this.master.connect(this.ctx.destination);
+      // ضوضاء بيضاء تُستخدم لصوت التصفيق
+      const len = this.ctx.sampleRate * 1;
+      this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d = this.noise.getChannelData(0);
+      for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    }
+    if(this.ctx.state === "suspended") this.ctx.resume();
+    return this.ctx;
+  },
+  // صفقة واحدة = ٢-٣ نبضات ضوضاء سريعة متتالية
+  clapHit(t, vol){
+    const c = this.ctx;
+    const pulses = 2 + Math.floor(Math.random()*2);
+    for(let p=0;p<pulses;p++){
+      const tt = t + p*0.009;
+      const src = c.createBufferSource(); src.buffer = this.noise;
+      const bp = c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value = 900 + Math.random()*1600; bp.Q.value = .9;
+      const hp = c.createBiquadFilter(); hp.type="highpass"; hp.frequency.value = 500;
+      const g = c.createGain();
+      const v = p===pulses-1 ? vol : vol*.6;
+      g.gain.setValueAtTime(0.0001, tt);
+      g.gain.exponentialRampToValueAtTime(v, tt+0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + (p===pulses-1 ? 0.13 : 0.03));
+      src.connect(bp).connect(hp).connect(g).connect(this.master);
+      src.start(tt, Math.random()*0.8); src.stop(tt+0.2);
+    }
+  },
+  // تصفيق جماعي قصير (≈ ١.٨ ثانية)
+  applause(){
+    if(!this.init()) return;
+    const now = this.ctx.currentTime + 0.02, dur = 1.8, n = 60;
+    for(let i=0;i<n;i++){
+      const r = Math.random();
+      const t = now + r*dur;
+      const fade = r < .75 ? 1 : (1 - (r-.75)/.25);   // يخفت في النهاية
+      this.clapHit(t, (0.25 + Math.random()*0.35) * fade);
+    }
+  },
+  tone(freq, t, dur, type="sine", vol=.25){
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t+dur+0.05);
+  },
+  success(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>{ this.tone(f,t+i*0.09,.45,"triangle",.22); this.tone(f*2,t+i*0.09,.3,"sine",.05); }); },
+  wrong(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    this.tone(392,t,.22,"sine",.18); this.tone(311,t+.16,.35,"sine",.16); },
+  pop(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    this.tone(660,t,.12,"sine",.15); this.tone(990,t+.05,.14,"sine",.1); },
+  tick(){ if(!this.init()) return; this.tone(1200,this.ctx.currentTime,.07,"square",.05); },
+  bell(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    [0,.35,.7].forEach(d=>{ this.tone(880,t+d,1.1,"sine",.25); this.tone(1320,t+d,.8,"sine",.08); }); }
+};
+
+/* ==========================================================================
+   🎉 المؤثرات البصرية
+   ========================================================================== */
+const FX = {
+  el: null,
+  claps(){
+    for(let i=0;i<16;i++){
+      const s = document.createElement("span");
+      s.className = "clapfx"; s.textContent = "👏";
+      s.style.left = (600 + Math.random()*400) + "px";
+      s.style.top  = (720 + Math.random()*60) + "px";
+      s.style.setProperty("--dx", (Math.random()*500-250) + "px");
+      s.style.setProperty("--r", (Math.random()*60-30) + "deg");
+      s.style.animationDelay = (Math.random()*0.5) + "s";
+      s.style.fontSize = (34 + Math.random()*26) + "px";
+      this.el.appendChild(s); setTimeout(()=>s.remove(), 2500);
+    }
+  },
+  confetti(x=800, y=420, n=70){
+    const colors = ["#6C3FD1","#8B5CF6","#14B8A6","#F59E0B","#EC4899","#C4B5FD"];
+    for(let i=0;i<n;i++){
+      const p = document.createElement("i");
+      p.className = "conf";
+      p.style.left = x+"px"; p.style.top = y+"px";
+      p.style.background = colors[i%colors.length];
+      const a = Math.random()*Math.PI*2, d = 180 + Math.random()*320;
+      p.style.setProperty("--x", Math.cos(a)*d + "px");
+      p.style.setProperty("--y", (Math.sin(a)*d + 160) + "px");
+      p.style.setProperty("--r", (Math.random()*720-360) + "deg");
+      p.style.width = (8+Math.random()*10)+"px";
+      this.el.appendChild(p); setTimeout(()=>p.remove(), 1400);
+    }
+  },
+  // تحويل موقع عنصر في الشاشة إلى إحداثيات المسرح
+  at(el){
+    const s = $("#stage").getBoundingClientRect(), r = el.getBoundingClientRect();
+    return [(r.left + r.width/2 - s.left)/SCALE, (r.top + r.height/2 - s.top)/SCALE];
+  },
+  message(txt){
+    const m = document.createElement("div"); m.className="bigmsg"; m.innerHTML = txt;
+    this.el.appendChild(m); setTimeout(()=>m.remove(), 1700);
+  }
+};
+function celebrate(el){ const [x,y] = el ? FX.at(el) : [800,420]; FX.confetti(x,y); Sound.success(); }
+function clap(){ Sound.applause(); FX.claps(); const b=$("#clapBtn"); b.animate([{transform:"scale(1)"},{transform:"scale(1.3)"},{transform:"scale(1)"}],{duration:400}); }
+
+/* ==========================================================================
+   ⏱️ المؤقت (يُستخدم في التحديات والنقاش والمجموعات)
+   ========================================================================== */
+class Timer{
+  constructor(host, sec, ring=false){
+    this.host = host; this.total = sec; this.left = sec; this.ring = ring; this.iv = null;
+    const C = 2*Math.PI*130; this.C = C;
+    host.innerHTML = `
+      <div class="timer ${ring?"ring":""}">
+        ${ring ? `<div class="ringbox"><svg width="300" height="300"><circle class="bg" cx="150" cy="150" r="130" fill="none" stroke-width="22"/>
+          <circle class="fg" cx="150" cy="150" r="130" fill="none" stroke-width="22" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+          <div class="tm-num"></div></div>` : `<div class="tm-num"></div>`}
+        <div class="row c"><button class="btn sm tm-go">▶ ابدئي</button><button class="btn sm ghost tm-re">↺</button></div>
+      </div>`;
+    this.box = $(".timer", host);
+    $(".tm-go", host).onclick = () => this.iv ? this.pause() : this.start();
+    $(".tm-re", host).onclick = () => this.set(this.total);
+    this.draw();
+  }
+  set(sec){ this.pause(); this.total = this.left = sec; this.box.classList.remove("done","warn"); this.draw(); }
+  start(){ if(this.left<=0) this.set(this.total); this.box.classList.remove("done");
+    this.iv = setInterval(()=>this.tick(), 1000); $(".tm-go",this.host).textContent = "⏸ إيقاف"; }
+  pause(){ clearInterval(this.iv); this.iv = null; $(".tm-go",this.host).textContent = "▶ ابدئي"; }
+  tick(){
+    this.left--;
+    if(this.left <= 10) this.box.classList.add("warn");
+    if(this.left > 0 && this.left <= 5) Sound.tick();
+    if(this.left <= 0){ this.left = 0; this.pause(); this.box.classList.add("done"); Sound.bell(); }
+    this.draw();
+  }
+  draw(){
+    const m = Math.floor(this.left/60), s = this.left%60;
+    $(".tm-num", this.host).textContent = toAr(`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`);
+    if(this.ring) $("circle.fg", this.host).style.strokeDashoffset = this.C * (1 - this.left/this.total);
+  }
+}
+
+/* ==========================================================================
+   🧱 بناء الشرائح حسب النوع — كل نوع له دالة (html) ودالة تفاعل (init)
+   ========================================================================== */
+const TYPES = {
+
+  /* ---------- التحضير ---------- */
+  prep:{
+    html:d => `
+      <div class="prep">
+        <div class="prep-hero card rv" style="--i:1">
+          <div class="wave">👋</div>
+          <h1>${d.greeting}</h1>
+          <p>${d.sub}</p>
+          <div class="date">${LESSON.subject}<small>${LESSON.number}: ${LESSON.title}</small></div>
+        </div>
+      </div>
+      <div class="rules rv" style="--i:3">${d.rules.map(r=>`<span class="chip">${r}</span>`).join("")}</div>`
+  },
+
+  /* ---------- بطاقات القلب (مراجعة) ---------- */
+  flip:{
+    html:d => `${head(d)}
+      <div class="body">
+        <p class="lead muted rv" style="--i:1">${d.note||""}</p>
+        <div class="flips" style="grid-template-columns:repeat(${d.cols||4},1fr)">${d.cards.map((c,i)=>`
+          <button class="flip rv" style="--i:${i+2}"><div class="flip-in">
+            <div class="face front"><div class="ic float" style="animation-delay:${i*.3}s">${c.icon}</div><div class="ft">${c.front}</div><div class="tap">اضغطي للقلب 🔄</div></div>
+            <div class="face back"><div class="bt">${c.back}</div>${c.ex?`<div class="ex">${c.ex}</div>`:""}</div>
+          </div></button>`).join("")}
+        </div>
+        <div class="row c rv" style="--i:7"><button class="btn teal bbtn">${d.bridgeBtn}</button></div>
+        <div class="bridge hidden-step">${d.bridge}</div>
+      </div>`,
+    init:(el) => {
+      $$(".flip",el).forEach(f => f.onclick = () => { f.classList.toggle("on"); Sound.pop(); });
+      $(".bbtn",el).onclick = e => { const b=$(".bridge",el); b.classList.add("show"); $$(".flip",el).forEach(f=>f.classList.add("on")); celebrate(b); };
+    }
+  },
+
+  /* ---------- ماذا تتوقعين؟ ---------- */
+  predict:{
+    html:d => `${head(d)}
+      <div class="predict">
+        <div class="scene card rv" style="--i:1"><div class="big float">${d.icon}</div><p>${d.scenario}</p></div>
+        <div class="pred-list">
+          <h3 class="pred-q rv" style="--i:2">${d.question}</h3>
+          ${d.answers.map(a=>`<div class="pred-item hidden-step"><span>${a.icon}</span>${a.text}</div>`).join("")}
+          <div class="row rv" style="--i:3"><button class="btn rbtn">${d.revealBtn}</button></div>
+          <div class="note hidden-step concl">${d.conclusion}</div>
+        </div>
+      </div>`,
+    init:(el) => {
+      const items = $$(".pred-item",el); let k = 0;
+      $(".rbtn",el).onclick = () => {
+        if(k < items.length){ items[k++].classList.add("show"); Sound.pop(); }
+        else { const c=$(".concl",el); if(!c.classList.contains("show")){ c.classList.add("show"); celebrate(c); } }
+        if(k === items.length) $(".rbtn",el).textContent = "💡 ما الحل؟";
+      };
+    }
+  },
+
+  /* ---------- العنوان ---------- */
+  title:{
+    html:d => {
+      const pos = [[140,120],[1320,140],[110,560],[1340,540],[380,40],[1080,660]];
+      return `<div class="titleS">
+        ${(d.icons||[]).map((ic,i)=>`<span class="orbit float" style="left:${pos[i%6][0]}px;top:${pos[i%6][1]}px;animation-delay:${i*.4}s">${ic}</span>`).join("")}
+        <div class="kicker rv" style="--i:0">${LESSON.subject} • ${LESSON.unit}</div>
+        <div class="badge rv" style="--i:1">${LESSON.number}</div>
+        <h1 class="rv" style="--i:2">${LESSON.title}</h1>
+        <div class="sub rv" style="--i:3">${d.sub}</div>
+        <div class="note tnote rv" style="--i:4">${d.note}</div>
+      </div>`;
+    }
+  },
+
+  /* ---------- قائمة (الأهداف) ---------- */
+  list:{
+    html:d => `${head(d)}
+      <div class="body" style="justify-content:center">
+        <div class="olist">${d.items.map((it,i)=>`
+          <div class="oitem card rv" style="--i:${i+1}"><span class="n">${it.icon}</span>${it.text}</div>`).join("")}
+        </div>
+      </div>`
+  },
+
+  /* ---------- المعادلة (لاحظ واكتشف) ---------- */
+  equation:{
+    html:d => `${head(d)}
+      <div class="body">
+        <p class="lead muted center rv" style="--i:1">👆 ${d.hint}</p>
+        <div class="eq rv" style="--i:2">
+          ${d.parts.map((p,i)=>`${i?'<span class="eq-op">+</span>':""}<button class="eq-box"><span class="q">؟</span><span class="a"><i>${p.icon}</i><span>${p.label}</span></span></button>`).join("")}
+          <span class="eq-op">=</span>
+          <button class="eq-box res"><span class="q">؟</span><span class="a"><i>${d.result.icon}</i><span>${d.result.label}</span></span></button>
+        </div>
+        <div class="row c rv" style="--i:3"><button class="btn dbtn">${d.defBtn}</button></div>
+        <div class="defbox card hidden-step">${d.definition}</div>
+      </div>`,
+    init:(el) => {
+      const boxes = $$(".eq-box",el);
+      boxes.forEach(b => b.onclick = () => {
+        if(b.classList.contains("on")) return;
+        b.classList.add("on"); Sound.pop();
+        if(boxes.every(x=>x.classList.contains("on"))) celebrate(b);
+      });
+      $(".dbtn",el).onclick = () => { boxes.forEach(b=>b.classList.add("on")); $(".defbox",el).classList.add("show"); Sound.pop(); };
+    }
+  },
+
+  /* ---------- التصنيف ---------- */
+  sort:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="row rv" style="--i:1" >
+          <p class="lead" style="flex:1">${d.question}</p>
+          <span class="score">✅ <span class="sc">٠</span> / ${toAr(d.items.length)}</span>
+        </div>
+        <div class="sort-grid">${d.items.map((it,i)=>`
+          <div class="sitem card rv" style="--i:${i+2}" data-cat="${it.cat}">
+            <div class="si">${it.icon}</div><div class="st">${it.text}</div>
+            <div class="sb">${d.cats.map(c=>`<button data-c="${c.id}">${c.icon} ${c.label}</button>`).join("")}</div>
+            <div class="done">${(d.cats.find(c=>c.id===it.cat)||{}).icon} ${(d.cats.find(c=>c.id===it.cat)||{}).label}</div>
+          </div>`).join("")}
+        </div>
+        <div class="note hidden-step dmsg center">${d.doneMsg||"🎉 أحسنتِ!"}</div>
+      </div>`,
+    init:(el,d) => {
+      let score = 0;
+      $$(".sitem",el).forEach(it => {
+        $$(".sb button",it).forEach(b => b.onclick = () => {
+          if(b.dataset.c === it.dataset.cat){
+            it.classList.add("ok", "c" + d.cats.findIndex(c => c.id === it.dataset.cat));
+            score++; $(".sc",el).textContent = toAr(score); Sound.pop();
+            if(score === d.items.length){ $(".dmsg",el).classList.add("show"); celebrate($(".dmsg",el)); FX.message("أحسنتِ! 👏"); }
+          } else {
+            b.classList.add("x"); it.classList.remove("shake"); void it.offsetWidth; it.classList.add("shake"); Sound.wrong();
+            setTimeout(()=>b.classList.remove("x"), 700);
+          }
+        });
+      });
+    }
+  },
+
+  /* ---------- بطاقات قابلة للنقر ---------- */
+  cards:{
+    html:d => `${head(d)}
+      <div class="body">
+        ${d.intro?`<p class="lead rv" style="--i:1">${d.intro}</p>`:""}
+        ${d.chips?`<div class="chips rv" style="--i:2">${d.chips.map((c,i)=>`${i?'<span style="font-size:28px;color:var(--p2)">←</span>':""}<span class="chip">${c}</span>`).join("")}</div>`:""}
+        ${d.sub?`<p class="lead rv" style="--i:3;font-weight:800">${d.sub}</p>`:""}
+        <div class="cgrid" style="grid-template-columns:repeat(${d.cols||3},1fr)">
+          ${d.cards.map((c,i)=>`<button class="ccard card rv" style="--i:${i+3}"><div class="ci">${c.icon}</div><div class="ct">${c.title}</div><div class="cx">${c.text}</div><div class="tap">اضغطي 👆</div></button>`).join("")}
+        </div>
+        <div class="row" style="justify-content:space-between">
+          ${d.footer?`<div class="note rv" style="--i:9;flex:1">${d.footer}</div>`:"<span></span>"}
+          <button class="btn sm ghost allbtn rv" style="--i:9">👁️ إظهار الكل</button>
+        </div>
+      </div>`,
+    init:(el) => {
+      $$(".ccard",el).forEach(c => c.onclick = () => { c.classList.toggle("open"); Sound.pop(); });
+      $(".allbtn",el).onclick = () => { $$(".ccard",el).forEach(c=>c.classList.add("open")); Sound.pop(); };
+    }
+  },
+
+  /* ---------- مثلث إدارة المشروع ---------- */
+  triangle:{
+    html:d => `${head(d)}
+      <div class="tri">
+        <div class="tri-wrap rv" style="--i:1">
+          <svg viewBox="0 0 620 500"><defs><marker id="ah" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#8B5CF6"/></marker></defs>
+            <polygon points="310,70 535,420 85,420" fill="rgba(139,92,246,.06)" stroke="#8B5CF6" stroke-width="5" stroke-dasharray="14 10" stroke-linejoin="round"/></svg>
+          <button class="tnode" data-k="scope" style="left:310px;top:70px"><i>${d.nodes.scope.icon}</i>${d.nodes.scope.label}</button>
+          <button class="tnode" data-k="time"  style="left:535px;top:420px"><i>${d.nodes.time.icon}</i>${d.nodes.time.label}</button>
+          <button class="tnode" data-k="cost"  style="left:85px;top:420px"><i>${d.nodes.cost.icon}</i>${d.nodes.cost.label}</button>
+          <div class="tcenter">${d.center}</div>
+        </div>
+        <div>
+          <div class="tinfo card rv" style="--i:2"><p style="margin:0" class="muted">${d.startText}</p></div>
+          <div class="lab card rv" style="--i:3">
+            <h4>${d.labTitle}</h4>
+            <input type="range" min="1" max="5" value="1" class="rng">
+            <div class="barrow"><span>🎯 النطاق</span><div class="bartrack"><div class="barfill b1" style="background:var(--p)"></div></div><span class="v1"></span></div>
+            <div class="barrow"><span>⏰ الزمن</span><div class="bartrack"><div class="barfill b2" style="background:var(--ac)"></div></div><span class="v2"></span></div>
+            <div class="barrow"><span>💰 التكلفة</span><div class="bartrack"><div class="barfill b3" style="background:var(--am)"></div></div><span class="v3"></span></div>
+            <div class="note hidden-step lnote" style="margin-top:12px;font-size:24px">${d.labNote}</div>
+          </div>
+        </div>
+      </div>`,
+    init:(el,d) => {
+      $$(".tnode",el).forEach(n => n.onclick = () => {
+        $$(".tnode",el).forEach(x=>x.classList.remove("on")); n.classList.add("on");
+        const nd = d.nodes[n.dataset.k];
+        const box = $(".tinfo",el);
+        box.innerHTML = `<h3>${nd.icon} ${nd.label}</h3><div>${nd.text}</div>`;
+        box.animate([{opacity:0,transform:"translateY(12px)"},{opacity:1,transform:"none"}],{duration:400});
+        Sound.pop();
+      });
+      const labels = ["صغير","متوسط","كبير","كبير جدًا","ضخم"];
+      const rng = $(".rng",el);
+      const upd = () => {
+        const v = +rng.value;
+        $(".b1",el).style.width = v*20+"%";
+        $(".b2",el).style.width = (12+v*17.6)+"%";
+        $(".b3",el).style.width = (10+v*18)+"%";
+        $(".v1",el).textContent = labels[v-1];
+        $(".v2",el).textContent = toAr(v*2) + " أسابيع";
+        $(".v3",el).textContent = toAr(v*1000) + " ريال";
+        if(v>=3) $(".lnote",el).classList.add("show");
+      };
+      rng.oninput = upd; rng.onchange = () => rng.blur(); upd();
+    }
+  },
+
+  /* ---------- فكّري – زاوجي – شاركي ---------- */
+  tps:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="tps-q card rv" style="--i:1">${d.question}</div>
+        <div class="tps-row">
+          ${d.phases.map((p,i)=>`<button class="phase card rv" style="--i:${i+2}" data-s="${p.sec}"><i>${p.icon}</i>${p.label}<small>⏱️ ${toAr(Math.round(p.sec/60*10)/10)} دقيقة</small></button>`).join("")}
+          <div class="card rv tbox" style="--i:5"></div>
+        </div>
+        <div class="row c rv" style="--i:6"><button class="btn teal abtn">${d.answerBtn}</button></div>
+        <div class="cmp hidden-step">${d.answer.map(a=>`<div class="col card"><h4>${a.title}</h4><ul>${a.points.map(p=>`<li>${p}</li>`).join("")}</ul></div>`).join("")}</div>
+      </div>`,
+    init:(el,d) => {
+      const t = new Timer($(".tbox",el), d.phases[0].sec);
+      $$(".phase",el).forEach(p => p.onclick = () => {
+        $$(".phase",el).forEach(x=>x.classList.remove("on")); p.classList.add("on");
+        t.set(+p.dataset.s); t.start(); Sound.pop();
+      });
+      $(".abtn",el).onclick = () => { const c=$(".cmp",el); c.classList.add("show"); Sound.pop(); };
+    }
+  },
+
+  /* ---------- لعبة الترتيب ---------- */
+  order:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="row rv" style="--i:1"><p class="lead" style="flex:1">${d.question}</p><button class="btn sm ghost resetO">↺ إعادة</button></div>
+        <div class="slots rv" style="--i:2">${d.steps.map((s,i)=>`${i?'<span class="arrow">←</span>':""}<div class="slot"><span class="sn">${toAr(i+1)}</span><span class="sl"></span><span class="sd"></span></div>`).join("")}</div>
+        <div class="feedback ofb"></div>
+        <div class="pool rv" style="--i:3"></div>
+      </div>`,
+    init:(el,d) => {
+      const pool = $(".pool",el), slots = $$(".slot",el), fb = $(".ofb",el);
+      let next = 0;
+      const build = () => {
+        next = 0; fb.innerHTML = "";
+        slots.forEach(s=>{ s.classList.remove("fill"); $(".sl",s).textContent=""; $(".sd",s).textContent=""; });
+        let order = shuffle(d.steps.map((_,i)=>i));
+        while(order.every((v,i)=>v===i) && d.steps.length>1) order = shuffle(order);
+        pool.innerHTML = order.map(i=>`<button data-i="${i}">${d.steps[i].icon} ${d.steps[i].label}</button>`).join("");
+        $$("button",pool).forEach(b => b.onclick = () => {
+          const i = +b.dataset.i;
+          if(i === next){
+            const s = slots[next]; s.classList.add("fill");
+            $(".sl",s).textContent = d.steps[i].icon + " " + d.steps[i].label;
+            $(".sd",s).textContent = d.steps[i].desc || "";
+            b.classList.add("used"); next++; Sound.pop(); fb.innerHTML = "";
+            if(next === d.steps.length){ fb.innerHTML = `<span class="ok">أحسنتِ! 👏 ترتيب صحيح</span>`; celebrate(fb); }
+          } else {
+            b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); Sound.wrong();
+            fb.innerHTML = `<span class="no">حاولي مرة أخرى 💜 ما المرحلة رقم ${toAr(next+1)}؟</span>`;
+          }
+        });
+      };
+      $(".resetO",el).onclick = build; build();
+    }
+  },
+
+  /* ---------- اختيار من متعدد ---------- */
+  mcq:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="mcq-q card rv" style="--i:1">${d.icon?`<span class="qi float">${d.icon}</span>`:""}<span>${d.question}</span></div>
+        <div class="opts">${d.options.map((o,i)=>`
+          <button class="opt rv" style="--i:${i+2}" data-i="${i}"><span class="oi">${o.icon||LETTERS[i]}</span><span>${o.text}</span></button>`).join("")}
+        </div>
+        <div class="feedback mfb"></div>
+        ${d.explain?`<div class="explain hidden-step">${d.explain}</div>`:""}
+      </div>`,
+    init:(el,d) => {
+      const fb = $(".mfb",el);
+      let solved = false;
+      $$(".opt",el).forEach(o => o.onclick = () => {
+        if(solved) return;
+        if(+o.dataset.i === d.correct){
+          solved = true; o.classList.add("right");
+          fb.innerHTML = `<span class="ok">أحسنتِ! 👏 إجابة صحيحة</span>`;
+          const ex = $(".explain",el); if(ex) ex.classList.add("show");
+          celebrate(o);
+        } else {
+          o.classList.add("wrong"); o.classList.remove("shake"); void o.offsetWidth; o.classList.add("shake");
+          fb.innerHTML = `<span class="no">حاولي مرة أخرى 💜</span>`; Sound.wrong();
+        }
+      });
+    }
+  },
+
+  /* ---------- صح أم خطأ ---------- */
+  tf:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="tf-list">${d.items.map((it,i)=>`
+          <div class="tf card rv" style="--i:${i+1}" data-a="${it.answer}">
+            <div><span class="tt">${toAr(i+1)}. ${it.text}</span>${it.fix?`<span class="fix hidden-step">✏️ التصحيح: ${it.fix}</span>`:""}</div>
+            <div class="tb"><button class="t" data-v="true">✔ صح</button><button class="f" data-v="false">✖ خطأ</button></div>
+          </div>`).join("")}
+        </div>
+        <div class="feedback tfb"></div>
+      </div>`,
+    init:(el,d) => {
+      let score = 0; const rows = $$(".tf",el);
+      rows.forEach(r => $$(".tb button",r).forEach(b => b.onclick = () => {
+        if(r.classList.contains("ok")) return;
+        if(b.dataset.v === r.dataset.a){
+          r.classList.add("ok"); b.classList.add("sel"); Sound.pop(); score++;
+          const fx = $(".fix",r); if(fx) fx.classList.add("show");
+          if(score === rows.length){ $(".tfb",el).innerHTML = `<span class="ok">أحسنتِ! 👏 أجبتِ عن جميع العبارات</span>`; celebrate($(".tfb",el)); }
+        } else {
+          b.classList.add("x"); r.classList.remove("shake"); void r.offsetWidth; r.classList.add("shake"); Sound.wrong();
+          $(".tfb",el).innerHTML = `<span class="no">حاولي مرة أخرى 💜</span>`;
+          setTimeout(()=>b.classList.remove("x"),700);
+        }
+      }));
+    }
+  },
+
+  /* ---------- العصف الذهني ---------- */
+  brainstorm:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="storm rv" style="--i:1"><div class="storm-center">${d.center}</div></div>
+        <div class="storm-in rv" style="--i:2">
+          <input type="text" placeholder="${d.placeholder}" maxlength="34">
+          <button class="btn addI">➕ أضيفي</button>
+          <button class="btn teal seedI">${d.seedBtn}</button>
+          <button class="btn sm ghost clrI">↺</button>
+        </div>
+      </div>`,
+    init:(el,d) => {
+      const area = $(".storm",el), inp = $("input",el);
+      let n = 0, seedK = 0;
+      // أماكن الأفكار: عمودان على الجانبين + أعلى وأسفل الفكرة المركزية
+      const SLOTS = [[84,12],[16,12],[84,31],[16,31],[84,50],[16,50],[84,69],[16,69],[84,88],[16,88],[50,9],[50,91]];
+      const place = () => {
+        const W = area.clientWidth || 1420, H = area.clientHeight || 520;
+        const [px,py] = SLOTS[n % SLOTS.length], ring = Math.floor(n / SLOTS.length);
+        n++;
+        return [W*px/100 + (px<50? ring*30 : -ring*30), H*py/100 + ring*14];
+      };
+      const add = (txt, book=false) => {
+        if(!txt.trim()) return;
+        const [x,y] = place();
+        const s = document.createElement("div");
+        s.className = "idea" + (book?" book":""); s.textContent = txt;
+        s.style.left = x+"px"; s.style.top = y+"px";
+        area.appendChild(s); Sound.pop();
+      };
+      $(".addI",el).onclick = () => { add(inp.value); inp.value=""; inp.focus(); };
+      inp.addEventListener("keydown", e => { if(e.key==="Enter"){ add(inp.value); inp.value=""; } e.stopPropagation(); });
+      $(".seedI",el).onclick = () => { if(seedK < d.seeds.length) add(d.seeds[seedK++], true); if(seedK===d.seeds.length) $(".seedI",el).disabled=true; };
+      $(".clrI",el).onclick = () => { $$(".idea",area).forEach(x=>x.remove()); n=0; seedK=0; $(".seedI",el).disabled=false; };
+    }
+  },
+
+  /* ---------- تحدي الدقيقة ---------- */
+  challenge:{
+    html:d => `${head(d)}
+      <div class="chal">
+        <div class="rv" style="--i:1"><div class="tbox"></div></div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div class="chal-task card rv" style="--i:2">${d.task}</div>
+          <div class="counter card rv" style="--i:3;padding:10px">
+            عدد الإجابات:
+            <button class="btn sm ghost cminus">−</button><span class="cn">٠</span><button class="btn sm cplus">+</button>
+          </div>
+          <div class="row rv" style="--i:4"><button class="btn teal ansB">${d.answersBtn}</button></div>
+          <div class="ans-grid">${d.answers.map(a=>`<span class="chip hidden-step">${a}</span>`).join("")}</div>
+        </div>
+      </div>`,
+    init:(el,d) => {
+      new Timer($(".tbox",el), d.seconds, true);
+      let c = 0; const cn = $(".cn",el);
+      $(".cplus",el).onclick = () => { c++; cn.textContent = toAr(c); Sound.pop(); };
+      $(".cminus",el).onclick = () => { c=Math.max(0,c-1); cn.textContent = toAr(c); };
+      $(".ansB",el).onclick = () => { $$(".ans-grid .chip",el).forEach((x,i)=>setTimeout(()=>{x.classList.add("show");Sound.pop();}, i*180)); };
+    }
+  },
+
+  /* ---------- التعلم التعاوني ---------- */
+  groups:{
+    html:d => `${head(d)}
+      <div class="body">
+        <p class="lead rv" style="--i:1">${d.scenario}</p>
+        <div class="groups" style="grid-template-columns:repeat(${d.groups.length},1fr)">${d.groups.map((g,i)=>`
+          <div class="grp card rv" style="--i:${i+2};--c:${g.color}"><i class="float" style="animation-delay:${i*.3}s">${g.icon}</i><h4>${g.name}</h4><p>${g.task}</p></div>`).join("")}
+        </div>
+        <div class="gfoot">
+          <div class="rv" style="--i:6"><p class="lead" style="font-weight:800;margin-bottom:10px">${d.teamworkTitle||"🤝 لماذا نعمل كفريق؟"}</p>
+            <div class="chips">${d.teamwork.map(t=>`<span class="chip">${t}</span>`).join("")}</div></div>
+          <div class="card rv tbox" style="--i:7"></div>
+        </div>
+      </div>`,
+    init:(el,d) => { new Timer($(".tbox",el), d.minutes*60); }
+  },
+
+  /* ---------- تطبيق عملي: بطاقة المشروع ---------- */
+  builder:{
+    html:d => `${head(d)}
+      <p class="lead rv" style="--i:1;margin-bottom:18px;font-size:27px">${d.scenario}</p>
+      <div class="builder">
+        <div class="fields">${d.fields.map((f,i)=>`
+          <label class="field rv" style="--i:${i+2}"><span>${f.icon} ${f.label}</span><input data-k="${f.key}" placeholder="${f.ph}" maxlength="40"></label>`).join("")}
+          <div class="row rv" style="--i:8"><button class="btn apB">${d.approveBtn}</button><button class="btn sm ghost rsB">↺ مسح</button></div>
+        </div>
+        <div class="pcard card rv" style="--i:3">
+          <h3 class="pv-name">📁 اسم المشروع</h3>
+          <div class="pstats">
+            <div class="pstat"><i>🎯</i><b>النطاق</b><span class="pv-scope">…</span></div>
+            <div class="pstat"><i>⏰</i><b>الزمن</b><span class="pv-time">…</span></div>
+            <div class="pstat"><i>💰</i><b>التكلفة</b><span class="pv-cost">…</span></div>
+          </div>
+          <div class="center" style="font-size:22px;font-weight:800;color:var(--mut)">👥 أصحاب المصلحة</div>
+          <div class="stk pv-stake"></div>
+          <div class="stamp">✅ تم اعتماد خطة المشروع — أحسنتِ!</div>
+        </div>
+      </div>`,
+    init:(el) => {
+      const card = $(".pcard",el);
+      const upd = () => {
+        const v = k => ($(`input[data-k="${k}"]`,el)||{}).value || "";
+        $(".pv-name",el).textContent = "📁 " + (v("name") || "اسم المشروع");
+        $(".pv-scope",el).textContent = v("scope") || "…";
+        $(".pv-time",el).textContent  = v("time")  || "…";
+        $(".pv-cost",el).textContent  = v("cost")  || "…";
+        $(".pv-stake",el).innerHTML = v("stake").split(/[،,]/).map(s=>s.trim()).filter(Boolean).map(s=>`<span class="chip">${s}</span>`).join("");
+        card.classList.remove("approved");
+      };
+      $$("input",el).forEach(i => { i.oninput = upd; i.addEventListener("keydown", e => e.stopPropagation()); });
+      $(".apB",el).onclick = () => { card.classList.add("approved"); celebrate(card); FX.message("خطة رائعة! 👏"); };
+      $(".rsB",el).onclick = () => { $$("input",el).forEach(i=>i.value=""); upd(); };
+    }
+  },
+
+  /* ---------- المراجعة (خريطة ذهنية) ---------- */
+  review:{
+    html:d => {
+      const half = Math.ceil(d.branches.length/2);
+      const br = (b,i) => `<button class="branch card rv" style="--i:${i+2}"><div class="bh"><span>${b.icon}</span>${b.label}</div><div class="bp">${b.points}</div></button>`;
+      return `${head(d)}
+      <div class="mind">
+        <div class="mcol">${d.branches.slice(0,half).map((b,i)=>br(b,i)).join("")}</div>
+        <div class="mcore rv" style="--i:1">${d.center}</div>
+        <div class="mcol">${d.branches.slice(half).map((b,i)=>br(b,i+half)).join("")}</div>
+      </div>
+      <div class="row c"><button class="btn sm ghost allR">👁️ إظهار الكل</button></div>`;
+    },
+    init:(el) => {
+      $$(".branch",el).forEach(b => b.onclick = () => { b.classList.toggle("open"); Sound.pop(); });
+      $(".allR",el).onclick = () => $$(".branch",el).forEach(b=>b.classList.add("open"));
+    }
+  },
+
+  /* ---------- التقييم الفوري ---------- */
+  exit:{
+    html:d => `${head(d)}
+      <div class="exit">
+        <div class="votes card rv" style="--i:1">
+          <p class="lead muted" style="margin:0 0 6px;font-size:24px">اضغطي على الوجه عدد الطالبات الرافعات أيديهن ✋</p>
+          ${d.levels.map(l=>`<button class="vote"><span class="ve">${l.emoji}</span><span class="vl">${l.label}</span><div class="bartrack"><div class="barfill" style="width:0;background:linear-gradient(90deg,var(--p2),var(--p))"></div></div><span class="vc">٠</span></button>`).join("")}
+          <div class="row"><button class="btn sm ghost rsV">↺ تصفير</button></div>
+        </div>
+        <div class="ticket card rv" style="--i:2"><h3>${d.ticket.title}</h3>${d.ticket.items.map(t=>`<div>${t}</div>`).join("")}</div>
+      </div>`,
+    init:(el) => {
+      const votes = $$(".vote",el); const counts = votes.map(()=>0);
+      const draw = () => { const mx = Math.max(1,...counts);
+        votes.forEach((v,i)=>{ $(".vc",v).textContent = toAr(counts[i]); $(".barfill",v).style.width = (counts[i]/mx*100)+"%"; }); };
+      votes.forEach((v,i) => v.onclick = () => { counts[i]++; draw(); Sound.pop(); });
+      $(".rsV",el).onclick = () => { counts.fill(0); draw(); };
+    }
+  },
+
+  /* ---------- الختام ---------- */
+  closing:{
+    html:d => `
+      <div class="closing">
+        <div class="trophy rv" style="--i:0">${d.emoji}</div>
+        <h1 class="rv" style="--i:1">${d.title}</h1>
+        <p class="rv" style="--i:2">${d.message}</p>
+        <div class="note rv" style="--i:3">${d.homework}</div>
+        <button class="btn rv clapBig" style="--i:4;font-size:30px;background:linear-gradient(135deg,var(--am),#F97316);box-shadow:0 7px 0 #B45309">${d.clapHint}</button>
+      </div>`,
+    init:(el) => { $(".clapBig",el).onclick = () => { clap(); FX.confetti(800,300,90); }; }
+  }
+};
+
+/* ==========================================================================
+   🧮 أنواع إضافية: صندوق أيزنهاور • العلاقات بين المهام • محاكي جانت بروجكت
+   ========================================================================== */
+Object.assign(TYPES, {
+
+  /* ---------- صندوق أيزنهاور ---------- */
+  matrix:{
+    html:d => `${head(d)}
+      <div class="mx">
+        <div class="mx-pool">
+          <p class="lead muted rv" style="--i:1;font-size:22px;margin:0 0 4px">${d.hint}</p>
+          ${d.items.map((it,i)=>`<button class="mx-item rv" style="--i:${i+2}" data-i="${i}">📌 ${it.text}</button>`).join("")}
+          <div class="feedback mfb" style="min-height:44px;font-size:26px"></div>
+        </div>
+        <div class="mx-grid rv" style="--i:2">
+          <span></span><div class="mx-h">⚡ عاجل</div><div class="mx-h">🕰️ غير عاجل</div>
+          <div class="mx-h v">⭐ مهم</div>
+          <div class="mx-q q-iu" data-q="iu"><span class="qa">${d.quads.iu}</span></div>
+          <div class="mx-q q-in" data-q="in"><span class="qa">${d.quads.in}</span></div>
+          <div class="mx-h v">غير مهم</div>
+          <div class="mx-q q-nu" data-q="nu"><span class="qa">${d.quads.nu}</span></div>
+          <div class="mx-q q-nn" data-q="nn"><span class="qa">${d.quads.nn}</span></div>
+        </div>
+      </div>`,
+    init:(el,d) => {
+      let cur = null, placed = 0; const fb = $(".mfb",el);
+      $$(".mx-item",el).forEach(b => b.onclick = () => {
+        $$(".mx-item",el).forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); cur = +b.dataset.i; Sound.pop();
+      });
+      $$(".mx-q",el).forEach(q => q.onclick = () => {
+        if(cur === null){ fb.innerHTML = `<span class="no">اختاري مهمة أولًا 👈</span>`; return; }
+        const it = d.items[cur], btn = $(`.mx-item[data-i="${cur}"]`,el);
+        if(it.q === q.dataset.q){
+          btn.classList.add("used"); btn.classList.remove("sel");
+          const c = document.createElement("span"); c.className="chip"; c.textContent = it.text; q.appendChild(c);
+          placed++; cur = null; Sound.pop(); fb.innerHTML = `<span class="ok">صحيح 👏</span>`;
+          if(placed === d.items.length){ fb.innerHTML = `<span class="ok">أحسنتِ! 👏 أكملتِ الصندوق</span>`; celebrate(fb); }
+        } else {
+          q.classList.remove("shake"); void q.offsetWidth; q.classList.add("shake"); Sound.wrong();
+          fb.innerHTML = `<span class="no">حاولي مرة أخرى 💜</span>`;
+        }
+      });
+    }
+  },
+
+  /* ---------- العلاقات بين المهام ---------- */
+  deps:{
+    html:d => `${head(d)}
+      <div class="dp">
+        <div class="dp-tabs">
+          ${d.types.map((t,i)=>`<button class="dp-tab rv" style="--i:${i+1}" data-i="${i}">${t.name}<small>${t.en} (${t.id})</small></button>`).join("")}
+          <div class="note rv" style="--i:6;font-size:21px">${d.note||""}</div>
+        </div>
+        <div class="dp-view card rv" style="--i:2"></div>
+      </div>`,
+    init:(el,d) => {
+      const view = $(".dp-view",el);
+      // رسم توضيحي: الشريط أ (السابقة) والشريط ب (التابعة)
+      const geo = { FS:{a:[60,420],b:[500,860],from:["a","e"],to:["b","s"]},
+                    FF:{a:[60,640],b:[300,640],from:["a","e"],to:["b","e"]},
+                    SS:{a:[160,620],b:[160,800],from:["a","s"],to:["b","s"]},
+                    SF:{a:[480,900],b:[80,480],from:["a","s"],to:["b","e"]} };
+      const show = i => {
+        const t = d.types[i], g = geo[t.id]; $$(".dp-tab",el).forEach((b,j)=>b.classList.toggle("on", i===j));
+        const ya = 60, yb = 150, pt = (w,s) => [ s==="s" ? g[w][0] : g[w][1], (w==="a"?ya:yb)+22 ];
+        const [x1,y1] = pt(...g.from), [x2,y2] = pt(...g.to);
+        let path;
+        if(g.to[1]==="s" && g.from[1]==="e") path = `M${x1},${y1} H${x1+30} V${(y1+y2)/2} H${x2-30} V${y2} H${x2-4}`;
+        else if(g.to[1]==="s") path = `M${x1},${y1} H${Math.min(x1,x2)-34} V${y2} H${x2-4}`;
+        else if(g.from[1]==="e") path = `M${x1},${y1} H${Math.max(x1,x2)+34} V${y2} H${x2+4}`;
+        else path = `M${x1},${y1} H${x1-34} V${(y1+y2)/2} H${x2+34} V${y2} H${x2+4}`;
+        view.innerHTML = `
+          <h3>${t.name}<small>${t.en}</small></h3>
+          <p class="dp-rule">${t.rule}</p>
+          <svg class="dp-svg" viewBox="0 0 1000 230" preserveAspectRatio="xMidYMid meet">
+            <defs><marker id="dpA" markerWidth="12" markerHeight="12" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2A1B4D"/></marker></defs>
+            <g class="ba"><rect x="${g.a[0]}" y="${ya}" width="${g.a[1]-g.a[0]}" height="44" rx="10" fill="#8B5CF6"/><text x="${(g.a[0]+g.a[1])/2}" y="${ya+30}" fill="#fff" font-size="24" font-weight="800" text-anchor="middle" font-family="Cairo,Tahoma">المهمة السابقة</text></g>
+            <g class="bb"><rect x="${g.b[0]}" y="${yb}" width="${g.b[1]-g.b[0]}" height="44" rx="10" fill="#14B8A6"/><text x="${(g.b[0]+g.b[1])/2}" y="${yb+30}" fill="#fff" font-size="24" font-weight="800" text-anchor="middle" font-family="Cairo,Tahoma">المهمة التابعة</text></g>
+            <path class="ar" d="${path}" fill="none" stroke="#2A1B4D" stroke-width="4" marker-end="url(#dpA)"/>
+            <text x="980" y="220" font-size="17" fill="#6B5E8A" text-anchor="end" font-family="Cairo,Tahoma">الزمن ⟶</text>
+          </svg>
+          <div class="dp-ex">${t.ex}</div>`;
+        Sound.pop();
+      };
+      $$(".dp-tab",el).forEach(b => b.onclick = () => show(+b.dataset.i));
+      show(0);
+    }
+  },
+
+  /* ---------- محاكي جانت بروجكت ---------- */
+  gantt:{
+    html:d => `<div class="shead rv" style="--i:0"><span class="tag">${d.tag||""}</span><h2 class="stitle">${d.title||""}</h2></div><div class="gp-host" style="flex:1;min-height:0;display:flex"></div>`,
+    init:(el,d) => { new GanttSim($(".gp-host",el), d); }
+  }
+});
+
+/* ==========================================================================
+   📊 محاكي GanttProject — الكود الكامل
+   ========================================================================== */
+const GP_INST = [];
+const GP_DAY = 86400000;
+const GP_ZOOM = [12,16,22,28,36,48,64];
+const GP_PRI = [["lowest","الأدنى Lowest","⏬"],["low","منخفضة Low","🔽"],["normal","طبيعي Normal",""],["high","عالية High","🔼"],["highest","الأعلى Highest","⏫"]];
+const GP_REL = {FS:"نهاية ← بداية (FS)", SS:"بداية ← بداية (SS)", FF:"نهاية ← نهاية (FF)", SF:"بداية ← نهاية (SF)"};
+const GP_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const GP_WD = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const GP_ROLES = ["مدير المشروع","مدير الإنتاج","كاتبة السيناريو","مديرة طاقم الممثلين","المخرجة","الممثلة","مديرة الموسيقى","فنانة المشهد","مصممة الأزياء","مديرة المسرح","مصممة الإضاءة"];
+const GP_TEAM = [["نورة","مدير المشروع"],["سارة","مدير الإنتاج"],["ريم","كاتبة السيناريو"],["لمى","مديرة طاقم الممثلين"],["جود","المخرجة"],["هيا","الممثلة"],["دانة","الممثلة"],["شهد","الممثلة"],["رغد","مديرة الموسيقى"],["ليان","فنانة المشهد"],["غلا","مصممة الأزياء"],["وعد","مصممة الإضاءة"]];
+const gpEsc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const gpToday = () => { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / GP_DAY); };
+const gpD = n => new Date(n * GP_DAY);
+const gpIso = n => gpD(n).toISOString().slice(0,10);
+const gpFromIso = s => { const v = Date.parse(s + "T00:00:00Z"); return isNaN(v) ? null : Math.floor(v / GP_DAY); };
+const gpFmt = n => { const d = gpD(n); return toAr(`${d.getUTCFullYear()}/${d.getUTCMonth()+1}/${d.getUTCDate()}`); };
+const gpDownload = (data, name, type) => {
+  // أسماء الملفات العربية قد تتحول إلى "download" في بعض المتصفحات، لذا نستخدم اسمًا إنجليزيًا آمنًا
+  if(/[^\x20-\x7E]/.test(name)){ const ext = name.slice(name.indexOf(".")); name = "GanttProject_" + gpIso(gpToday()) + ext; }
+  const a = document.createElement("a");
+  a.href = typeof data === "string" && data.startsWith("data:") ? data : URL.createObjectURL(new Blob([data], {type}));
+  a.download = name; a.style.display = "none"; document.body.appendChild(a); a.click();
+  setTimeout(() => { a.remove(); if(a.href.startsWith("blob:")) URL.revokeObjectURL(a.href); }, 1500);
+  return name;
+};
+
+/* لوحة المفاتيح: تمرير الاختصارات للمحاكي الظاهر حاليًا */
+window.KEYHOOK = e => {
+  const g = GP_INST.find(x => x.root.closest(".slide")?.classList.contains("active"));
+  return g ? g.key(e) : false;
+};
+
+class GanttSim {
+  constructor(host, cfg){
+    this.cfg = cfg; this.host = host;
+    this.initial = this.make(cfg.start || "empty");
+    this.p = JSON.parse(JSON.stringify(this.initial));
+    this.sel = new Set(); this.rsel = null; this.rexp = new Set();
+    this.tab = "gantt"; this.zi = 3; this.crit = false; this.base = false;
+    this.U = []; this.R = []; this.clip = null; this.find = "";
+    this.done = new Set(); this.missions = cfg.missions || [];
+    this.misOpen = this.missions.length > 0; this.tourOn = !!cfg.tour;
+    this.editId = null; this.dlg = null;
+    this.build(); this.render();
+    GP_INST.push(this);
+    // إعادة رسم أرقام الجولة عند ظهور الشريحة
+    new MutationObserver(() => { if(this.tourOn) setTimeout(()=>this.placeTour(), 750); })
+      .observe(this.root.closest(".slide"), {attributes:true, attributeFilter:["class"]});
+  }
+
+  /* ---------- التقويم وأيام العمل ---------- */
+  isW(n){ return !this.p.weekend.includes(gpD(n).getUTCDay()); }
+  nw(n){ let g = 0; while(!this.isW(n) && g++ < 8) n++; return n; }
+  addW(n,k){ let g = 0; if(k >= 0){ while(k > 0 && g++ < 9000){ n++; if(this.isW(n)) k--; } } else { while(k < 0 && g++ < 9000){ n--; if(this.isW(n)) k++; } } return n; }
+  endOf(t){ if(t.ms) return t.start; let e = t.start, c = 1, g = 0; while(c < t.dur && g++ < 9000){ e++; if(this.isW(e)) c++; } return e; }
+  startFor(e,dur){ let s = e, c = 1, g = 0; while(c < dur && g++ < 9000){ s--; if(this.isW(s)) c++; } return s; }
+  wdays(a,b){ let c = 0; for(let n=a; n<=b; n++) if(this.isW(n)) c++; return Math.max(1,c); }
+
+  /* ---------- بيانات المشروع ---------- */
+  make(kind){
+    const we = [5,6]; let S = gpToday(); while(we.includes(gpD(S).getUTCDay())) S++;
+    const p = {name:"", org:"", desc:"", web:"", start:S, weekend:we, roles:["مدير المشروع"], tasks:[], resources:[], nid:1, rid:1, baseline:null};
+    if(kind === "empty") return p;
+    this.p = p;
+    p.name = "عمل مسرحي"; p.org = "المدرسة";
+    const T = (name, off, dur, parent=null) => { const t = this.newT(name, this.addW(S,off), dur, parent); p.tasks.push(t); return t; };
+    const t1=T("الإنتاج",0,1), t2=T("السيناريو",1,1), t3=T("طاقم التمثيل",2,1), t4=T("قراءة السيناريو",3,1);
+    const t5=T("الإخراج",4,12), t6=T("الموسيقى",4,12,t5.id), t7=T("المشهد",4,12,t5.id), t8=T("الأزياء",4,12,t5.id);
+    const t9=T("البروفات",4,14), t10=T("الأضواء",14,4), t11=T("بروفات اللباس",18,1), t12=T("العرض الأول",19,1);
+    if(kind === "full"){
+      const L = (s,pr) => s.deps.push({id:pr.id, type:"FS", lag:0, hard:true});
+      L(t2,t1); L(t3,t2); L(t4,t3); [t6,t7,t8,t9].forEach(x=>L(x,t4)); L(t11,t9); L(t12,t11);
+      t11.ms = true; t9.prog = 75; t1.pri = "highest"; t12.pri = "high";
+      p.roles = [...GP_ROLES];
+      GP_TEAM.forEach(([n,r]) => p.resources.push({id:p.rid++, name:n, phone:"", email:"", role:r}));
+      t12.res = p.resources.map((r,i)=>({rid:r.id, unit:100, coord:i===1}));
+      t1.res = [{rid:1,unit:100,coord:true},{rid:2,unit:100,coord:false}];
+      t2.res = [{rid:3,unit:100,coord:true}]; t3.res = [{rid:4,unit:100,coord:true}];
+      t4.res = [3,4,5,6,7,8].map(i=>({rid:i,unit:100,coord:i===5}));
+      t6.res = [{rid:9,unit:100,coord:true}]; t7.res = [{rid:10,unit:100,coord:true}]; t8.res = [{rid:11,unit:100,coord:true}];
+      t9.res = [5,6,7,8].map(i=>({rid:i,unit:100,coord:i===5})); t10.res = [{rid:12,unit:100,coord:true}];
+      t11.res = [5,6,7,8,11].map(i=>({rid:i,unit:100,coord:i===5}));
+      this.schedule();
+    }
+    return p;
+  }
+  newT(name, start, dur=1, parent=null){
+    return {id:this.p.nid++, name, start, dur, ms:false, pri:"normal", prog:0, color:"", parent, col:false, notes:"", deps:[], res:[]};
+  }
+  byId(id){ return this.p.tasks.find(t => t.id === id); }
+  kids(id){ return this.p.tasks.filter(t => t.parent === id); }
+  isPar(t){ return this.p.tasks.some(x => x.parent === t.id); }
+  depth(t){ let d = 0, x = t, g = 0; while(x && x.parent && g++ < 60){ x = this.byId(x.parent); d++; } return d; }
+  span(t){
+    if(this.isPar(t)){ let a = Infinity, b = -Infinity; this.kids(t.id).forEach(k => { const [s,e] = this.span(k); a = Math.min(a,s); b = Math.max(b,e); }); return [a,b]; }
+    return [t.start, this.endOf(t)];
+  }
+  idx(t){ return this.p.tasks.indexOf(t); }
+  blockEnd(i){ const d = this.depth(this.p.tasks[i]); let j = i+1; while(j < this.p.tasks.length && this.depth(this.p.tasks[j]) > d) j++; return j; }
+  desc(id){ const out = []; const walk = pid => this.kids(pid).forEach(k => { out.push(k.id); walk(k.id); }); walk(id); return out; }
+  ordSel(){ return this.p.tasks.filter(t => this.sel.has(t.id)).map(t => t.id); }
+  rows(){ const out = [], hid = new Set(); for(const t of this.p.tasks){ const par = t.parent && this.byId(t.parent); if(t.parent && (hid.has(t.parent) || (par && par.col))){ hid.add(t.id); continue; } out.push(t); } return out; }
+  resName(id){ const r = this.p.resources.find(x => x.id === id); return r ? r.name : "؟"; }
+  dependsOn(a,b,seen=new Set()){ // هل تعتمد المهمة a (مباشرة أو غير مباشرة) على b؟
+    if(a === b) return true; if(seen.has(a)) return false; seen.add(a);
+    const t = this.byId(a); if(!t) return false;
+    return t.deps.some(d => this.dependsOn(d.id, b, seen));
+  }
+
+  /* ---------- الجدولة حسب التبعيات ---------- */
+  schedule(){
+    for(let pass=0; pass<60; pass++){
+      let ch = false;
+      for(const t of this.p.tasks){
+        if(this.isPar(t) || !t.deps.length) continue;
+        let hard = null, soft = -Infinity;
+        for(const d of t.deps){
+          const pr = this.byId(d.id); if(!pr) continue;
+          const [ps,pe] = this.span(pr), lag = +d.lag || 0; let s;
+          if(d.type === "SS") s = this.addW(this.nw(ps), lag);
+          else if(d.type === "FF") s = t.ms ? this.addW(pe,lag) : this.startFor(this.addW(pe,lag), t.dur);
+          else if(d.type === "SF") s = t.ms ? this.addW(ps,lag) : this.startFor(this.addW(ps,lag), t.dur);
+          else s = this.addW(pe, 1 + lag);
+          if(d.hard) hard = hard === null ? s : Math.max(hard, s); else soft = Math.max(soft, s);
+        }
+        let ns = hard !== null ? Math.max(hard, soft) : Math.max(t.start, soft);
+        if(!t.ms) ns = this.nw(ns);
+        if(ns !== t.start){ t.start = ns; ch = true; }
+      }
+      if(!ch) break;
+    }
+  }
+  critSet(){
+    const S = new Set(), leaves = this.p.tasks.filter(t => !this.isPar(t)); if(!leaves.length) return S;
+    const end = Math.max(...leaves.map(t => this.endOf(t)));
+    const st = leaves.filter(t => this.endOf(t) === end);
+    while(st.length){
+      const t = st.pop(); if(S.has(t.id)) continue; S.add(t.id);
+      let p = t; while(p.parent){ S.add(p.parent); p = this.byId(p.parent); if(!p) break; }
+      for(const d of t.deps){
+        const pr = this.byId(d.id); if(!pr) continue; const [ps,pe] = this.span(pr); let drive;
+        if(d.type === "FS") drive = this.addW(pe, 1 + (+d.lag||0)) === t.start; else drive = true;
+        if(!drive) continue;
+        if(this.isPar(pr)) this.desc(pr.id).map(i=>this.byId(i)).filter(x=>!this.isPar(x) && this.endOf(x) === pe).forEach(x=>st.push(x));
+        else st.push(pr);
+      }
+    }
+    return S;
+  }
+
+  /* ---------- التراجع والإعادة ---------- */
+  snap(){ this.U.push(JSON.stringify(this.p)); if(this.U.length > 80) this.U.shift(); this.R = []; }
+  commit(){ this.schedule(); this.render(); }
+  parentSpans(){ const m = {}; this.p.tasks.forEach(t => { if(this.isPar(t)) m[t.id] = this.span(t); }); return m; }
+  fixOrphans(m){ for(const id in m){ const t = this.byId(+id); if(t && !this.isPar(t)){ t.start = m[id][0]; t.dur = this.wdays(m[id][0], m[id][1]); } } }
+
+  /* ---------- بناء الواجهة ---------- */
+  build(){
+    const r = document.createElement("div"); r.className = "gp"; r.dir = "rtl"; this.root = r;
+    const tb = (a, ic, t, k="") => `<button class="gp-tb" data-a="${a}" title="${t}${k?` (${k})`:""}">${ic}</button>`;
+    r.innerHTML = `
+      <div class="gp-title"><span class="gp-logo"></span><span class="gp-ttl"></span><span class="gp-win"><span>—</span><span>☐</span><span>✕</span></span></div>
+      <div class="gp-menu">
+        <button class="gp-mi" data-m="project">المشروع <small>Project</small></button>
+        <button class="gp-mi" data-m="edit">تحرير <small>Edit</small></button>
+        <button class="gp-mi" data-m="view">عرض <small>View</small></button>
+        <button class="gp-mi" data-m="tasks">المهام <small>Tasks</small></button>
+        <button class="gp-mi" data-m="res">الموارد <small>Resources</small></button>
+        <button class="gp-mi" data-m="help">مساعدة</button>
+        <span class="gp-sp"></span>
+        <button class="gp-pill" data-a="sample">📘 مثال الكتاب</button>
+        <button class="gp-pill" data-a="tour">🧭 جولة</button>
+        ${this.missions.length?`<button class="gp-pill gp-mbtn" data-a="missions">🎯 مهامي <b class="gp-mc"></b></button>`:""}
+      </div>
+      <div class="gp-tool">
+        <span class="gp-grp" data-tour="فتح مشروع موجود 📂، وحفظ التعديلات على ملفك 💾">${tb("open","📂","فتح","Ctrl+O")}${tb("save","💾","حفظ","Ctrl+S")}</span>
+        <span class="gp-sep"></span>
+        <span class="gp-grp" data-tour="إضافة مهمة جديدة 🕘، أو مورد جديد 👤، أو حذف المحدد ✖">${tb("newTask","🕘","مهمة جديدة","Ctrl+T")}${tb("newRes","👤","مورد جديد")}${tb("delete","✖","حذف","Delete")}</span>
+        <span class="gp-sep"></span>
+        <span class="gp-grp" data-tour="خصائص المهمة ℹ️، وقص ✂️ ونسخ 📄 ولصق 📋 المهام">${tb("props","ℹ️","الخصائص","Alt+Enter")}${tb("cut","✂️","قص","Ctrl+X")}${tb("copy","📄","نسخ","Ctrl+C")}${tb("paste","📋","لصق","Ctrl+V")}</span>
+        <span class="gp-sep"></span>
+        <span class="gp-grp" data-tour="تراجع ↶ عن آخر خطوة، أو إعادتها ↷">${tb("undo","↶","تراجع","Ctrl+Z")}${tb("redo","↷","إعادة","Ctrl+Y")}</span>
+        <input class="gp-search" placeholder="🔍 Ctrl + F  بحث عن مهمة…" data-tour="البحث عن مهمة بالاسم وتمييزها">
+      </div>
+      <div class="gp-tabs" data-tour="التبديل بين مخطط جانت ومخطط الموارد"><button class="gp-tab" data-a="tabGantt">📊 Gantt جانت</button><button class="gp-tab" data-a="tabRes">👥 Resources Chart مخطط الموارد</button></div>
+      <div class="gp-main">
+        <div class="gp-side">
+          <div class="gp-stool" data-tour="⇥ مسافة بادئة: مهمة فرعية • ⇤ إلغاء المسافة • ↑↓ نقل المهمة • 🔗 ربط المهام المحددة • ✂🔗 فك الربط">
+            <button data-a="indent" title="مسافة بادئة Indent">⇥ بادئة</button>
+            <button data-a="unindent" title="إلغاء المسافة Unindent">⇤ إلغاء</button>
+            <button data-a="up" title="أعلى Up">↑</button>
+            <button data-a="down" title="أسفل Down">↓</button>
+            <button data-a="link" title="ربط المهام المحددة">🔗 ربط</button>
+            <button data-a="unlink" title="فك الربط">✂🔗 فك</button>
+          </div>
+          <div class="gp-banner"><span>GANTT</span><i>project</i></div>
+          <div class="gp-th" data-tour="لوحة المهام: اسم المهمة وتاريخ البدء والانتهاء (الموعد النهائي)"></div>
+          <div class="gp-body scrollable"></div>
+        </div>
+        <div class="gp-chart">
+          <div class="gp-ctool" data-tour="تكبير وتصغير الجدول الزمني، والانتقال لبداية المشروع أو اليوم، وإظهار المسار الحرج وخطوط الأساس">
+            <button data-a="zoomIn">🔍+ Zoom In</button><button data-a="zoomOut">🔍− Zoom Out</button>
+            <button data-a="goStart">Project start</button><button data-a="goToday">Today</button>
+            <button data-a="past">← Past</button><button data-a="future">Future →</button>
+            <span style="flex:1"></span>
+            <button data-a="crit" class="gp-bcrit">إظهار المسار الحرج</button><button data-a="base" class="gp-bbase">خطوط الأساس</button>
+          </div>
+          <div class="gp-cwrap scrollable" data-tp="c" data-tour="مخطط جانت: هنا تظهر الأيام والمهام (الأشرطة) التي يجب إنجازها. الأعمدة الرمادية عطلة نهاية الأسبوع">
+            <div class="gp-head"><div class="gp-hm"></div><div class="gp-hd" data-tp="l" data-tour="الجدول الزمني: الأشهر والأيام"></div></div>
+            <div class="gp-canvas"></div>
+          </div>
+        </div>
+      </div>
+      <div class="gp-status"><span class="gp-sw"></span><span>Cloud: disconnected</span><span class="gp-st"></span></div>
+      <div class="gp-layer"></div>
+      <input type="file" accept=".json,application/json" hidden class="gp-file">`;
+    this.host.appendChild(r);
+    this.$ = s => r.querySelector(s);
+    this.layer = this.$(".gp-layer");
+
+    // الأزرار
+    r.addEventListener("click", e => {
+      const m = e.target.closest(".gp-mi"); if(m){ e.stopPropagation(); return this.menu(m); }
+      const b = e.target.closest("[data-a]"); if(b && r.contains(b) && !b.disabled){ this.closeFloat(); this.act(b.dataset.a); return; }
+      if(!e.target.closest(".gp-cm") && !e.target.closest(".gp-tip") && !e.target.closest(".gp-tb-badge")) this.closeFloat();
+    });
+    // البحث
+    const sInp = this.$(".gp-search");
+    sInp.addEventListener("input", () => { this.find = sInp.value.trim(); this.render(); const h = this.$(".gp-tr.hit"); if(h) this.$(".gp-body").scrollTop = h.offsetTop - 40; });
+    // فتح ملف
+    this.$(".gp-file").addEventListener("change", e => this.openFile(e.target.files[0]));
+    // مزامنة التمرير العمودي
+    const body = this.$(".gp-body"), cw = this.$(".gp-cwrap"); let lock = false;
+    body.addEventListener("scroll", () => { if(lock) return; lock = true; cw.scrollTop = body.scrollTop; lock = false; });
+    cw.addEventListener("scroll", () => { if(lock) return; lock = true; body.scrollTop = cw.scrollTop; lock = false; if(this.tourOn) this.placeTour(); });
+    // لوحة المهام
+    body.addEventListener("click", e => this.rowClick(e));
+    body.addEventListener("dblclick", e => { const row = e.target.closest(".gp-tr[data-id]"); if(!row || e.target.closest("input,select")) return;
+      if(this.tab === "gantt") this.taskProps(+row.dataset.id); else if(row.dataset.kind === "r") this.resProps(+row.dataset.id); });
+    body.addEventListener("contextmenu", e => { e.preventDefault(); const row = e.target.closest(".gp-tr[data-id]");
+      if(row && this.tab === "gantt"){ const id = +row.dataset.id; if(!this.sel.has(id)){ this.sel = new Set([id]); this.updSel(); } }
+      if(row && this.tab === "res" && row.dataset.kind === "r"){ this.rsel = +row.dataset.id; this.updSel(); }
+      this.ctx(e); });
+    body.addEventListener("change", e => { const s = e.target.closest(".gp-rsel"); if(!s) return;
+      const rs = this.p.resources.find(x => x.id === +s.dataset.rid); if(!rs) return;
+      this.snap(); rs.role = s.value; this.render(); if(rs.role){ this.emit("roleAssign"); if(rs.role === "مدير المشروع") this.emit("pm"); } });
+    // المخطط: سحب الأشرطة وإنشاء الروابط
+    const cv = this.$(".gp-canvas");
+    cv.addEventListener("pointerdown", e => this.barDown(e));
+    cv.addEventListener("dblclick", e => { const b = e.target.closest("[data-bid]"); if(b && this.tab === "gantt") this.taskProps(+b.dataset.bid); });
+    cv.addEventListener("contextmenu", e => { e.preventDefault(); const b = e.target.closest("[data-bid]");
+      if(b && this.tab === "gantt"){ const id = +b.dataset.bid; if(!this.sel.has(id)){ this.sel = new Set([id]); this.updSel(); } this.ctx(e); } });
+  }
+
+  /* ---------- الرسم ---------- */
+  range(){
+    let a = this.p.start, b = this.p.start;
+    for(const t of this.p.tasks){ const [s,e] = this.span(t); a = Math.min(a,s); b = Math.max(b,e); }
+    a -= 3; b = Math.max(b + 18, a + 70);
+    return [a,b];
+  }
+  render(){
+    const r = this.root;
+    this.$(".gp-ttl").textContent = `GanttProject [${this.p.name || "untitled"}.gan] *`;
+    $$(".gp-tab", r).forEach(b => b.classList.toggle("on", (b.dataset.a === "tabGantt") === (this.tab === "gantt")));
+    this.$(".gp-bcrit").classList.toggle("on", this.crit);
+    this.$(".gp-bbase").classList.toggle("on2", this.base);
+    if(this.tab === "gantt") this.drawGantt(); else this.drawRes();
+    this.updTools();
+    const nT = this.p.tasks.length, nR = this.p.resources.length;
+    this.$(".gp-st").textContent = `${toAr(nT)} مهمة • ${toAr(nR)} مورد${this.p.org ? " • " + this.p.org : ""}`;
+    this.drawMissions();
+    if(this.tourOn) this.placeTour();
+    if(this.editId){ const inp = this.$(".gp-ed"); if(inp){ inp.focus(); inp.select(); } }
+  }
+  updSel(){
+    $$(".gp-tr[data-id]", this.root).forEach(r => r.classList.toggle("sel", this.tab === "gantt" ? this.sel.has(+r.dataset.id) : (r.dataset.kind === "r" && +r.dataset.id === this.rsel)));
+    $$(".gp-canvas [data-bid]", this.root).forEach(b => b.classList.toggle("sel", this.tab === "gantt" && this.sel.has(+b.dataset.bid)));
+    this.updTools();
+  }
+  updTools(){
+    const r = this.root;
+    const q = s => this.$(`[data-a="${s}"]`);
+    q("undo").disabled = !this.U.length; q("redo").disabled = !this.R.length;
+    q("paste").disabled = !this.clip;
+    const hasSel = this.tab === "gantt" ? this.sel.size > 0 : this.rsel != null;
+    ["props","delete"].forEach(a => q(a).disabled = !hasSel);
+    ["cut","copy"].forEach(a => q(a).disabled = !(this.tab === "gantt" && this.sel.size));
+    $$(".gp-stool button", r).forEach(b => b.disabled = this.tab !== "gantt" || !this.sel.size);
+  }
+  drawHeader(a,b,dw){
+    let hm = "", hd = "", lastM = -1;
+    for(let n=a; n<=b; n++){
+      const d = gpD(n), x = (n-a)*dw, m = d.getUTCMonth();
+      if(m !== lastM){ hm += `<span style="left:${x}px">${GP_MONTHS[m]} ${toAr(d.getUTCFullYear())}</span>`; lastM = m; }
+      const show = dw >= 20 || d.getUTCDay() === 0;
+      hd += `<span class="${this.isW(n)?"":"we"}" style="left:${x}px;width:${dw}px">${show ? toAr(d.getUTCDate()) : ""}</span>`;
+    }
+    this.$(".gp-hm").innerHTML = hm; this.$(".gp-hd").innerHTML = hd;
+    this.$(".gp-hm").style.width = this.$(".gp-hd").style.width = ((b-a+1)*dw) + "px";
+  }
+  drawGantt(){
+    const rows = this.rows(), dw = GP_ZOOM[this.zi], [a,b] = this.range(), W = (b-a+1)*dw;
+    this.$(".gp-th").style.gridTemplateColumns = "";
+    this.$(".gp-th").innerHTML = `<div>الاسم Name</div><div>البدء Begin</div><div>الانتهاء End</div>`;
+    const crit = this.crit ? this.critSet() : new Set();
+    const find = this.find.toLowerCase();
+    // لوحة المهام
+    let html = rows.map(t => {
+      const par = this.isPar(t), [s,e] = this.span(t), d = this.depth(t), pri = GP_PRI.find(x => x[0] === t.pri);
+      const hit = find && t.name.toLowerCase().includes(find);
+      const name = this.editId === t.id ? `<input class="gp-ed" value="${gpEsc(t.name)}">` : `<span style="overflow:hidden;text-overflow:ellipsis">${gpEsc(t.name)}</span>`;
+      return `<div class="gp-tr ${this.sel.has(t.id)?"sel":""} ${par?"par":""} ${hit?"hit":""}" data-id="${t.id}">
+        <div class="n" style="padding-inline-start:${6 + d*22}px"><span class="gp-tog" ${par?"data-tog":""}>${par ? (t.col ? "◀" : "▼") : ""}</span>${t.ms?'<span class="gp-ico">◆</span>':""}${name}${pri && pri[2] ? `<span class="gp-ico" title="${pri[1]}">${pri[2]}</span>` : ""}${t.res.length?`<span class="gp-ico" title="موارد">👤${toAr(t.res.length)}</span>`:""}</div>
+        <div class="d">${gpFmt(s)}</div><div class="d">${gpFmt(e)}</div></div>`;
+    }).join("");
+    const fill = Math.max(0, 18 - rows.length);
+    html += `<div class="gp-tr" style="border:none;height:${fill*32 + 20}px"></div>`;
+    this.$(".gp-body").innerHTML = html;
+    // المخطط
+    this.drawHeader(a,b,dw);
+    const H = Math.max(rows.length*32 + fill*32 + 20, 200);
+    let cv = "";
+    for(let n=a; n<=b; n++) if(!this.isW(n)) cv += `<div class="gp-we" style="left:${(n-a)*dw}px;width:${dw}px"></div>`;
+    const td = gpToday(); if(td >= a && td <= b) cv += `<div class="gp-today" style="left:${(td-a)*dw + dw/2}px" title="اليوم"></div>`;
+    const pos = {}; rows.forEach((t,i) => pos[t.id] = i);
+    rows.forEach((t,i) => {
+      const [s,e] = this.span(t), y = i*32, x = (s-a)*dw, w = (e-s+1)*dw - 2, cr = crit.has(t.id) ? "crit" : "", sl = this.sel.has(t.id) ? "sel" : "";
+      if(this.base && this.p.baseline && this.p.baseline[t.id]){ const [bs,be] = this.p.baseline[t.id]; cv += `<div class="gp-base" style="left:${(bs-a)*dw}px;top:${y+26}px;width:${(be-bs+1)*dw-2}px"></div>`; }
+      const res = t.res.map(x => this.resName(x.rid)).slice(0,3).join("، ") + (t.res.length > 3 ? "…" : "");
+      if(this.isPar(t)){
+        cv += `<div class="gp-sum ${cr}" data-bid="${t.id}" style="left:${x}px;top:${y+10}px;width:${w}px"></div>`;
+      } else if(t.ms){
+        cv += `<div class="gp-ms ${cr} ${sl}" data-bid="${t.id}" style="left:${x + dw/2 - 8}px;top:${y+8}px"><span class="lk" title="اسحبي لإنشاء علاقة"></span></div>`;
+        cv += `<div class="gp-lbl" style="left:${x + dw/2 + 14}px;top:${y+7}px">${gpEsc(t.name)}</div>`;
+      } else {
+        cv += `<div class="gp-bar ${cr} ${sl}" data-bid="${t.id}" style="left:${x+1}px;top:${y+8}px;width:${Math.max(w,6)}px;${t.color?`--c:${t.color}`:""}" title="${gpEsc(t.name)} — ${toAr(t.dur)} يوم${t.prog?` • ${toAr(t.prog)}٪`:""}">
+          ${t.prog ? `<span class="pg" style="width:${t.prog}%"></span>` : ""}<span class="rz" title="اسحبي لتغيير المدة"></span><span class="lk" title="اسحبي لإنشاء علاقة"></span></div>`;
+        if(res) cv += `<div class="gp-lbl" style="left:${x + w + 24}px;top:${y+7}px">${gpEsc(res)}</div>`;
+      }
+    });
+    // أسهم التبعيات
+    let paths = "";
+    rows.forEach(t => t.deps.forEach(d => {
+      if(pos[d.id] === undefined) return;
+      const pr = this.byId(d.id); if(!pr) return;
+      const P = (task, side) => { const [s,e] = this.span(task), i = pos[task.id];
+        if(task.ms && !this.isPar(task)) return [ (s-a)*dw + dw/2 + (side === "s" ? -8 : 8), i*32 + 16 ];
+        return [ side === "s" ? (s-a)*dw : (e-a+1)*dw, i*32 + 16 ]; };
+      const ty = d.type || "FS";
+      const [x1,y1] = P(pr, ty[0] === "F" ? "e" : "s"), [x2,y2] = P(t, ty[1] === "S" ? "s" : "e");
+      let path;
+      if(ty === "FS"){ path = x2 - 10 >= x1 + 8 ? `M${x1},${y1} H${x2-6} V${y2 + (y2>y1?-8:8)}` : `M${x1},${y1} h8 V${y1 + (y2>y1?16:-16)} H${x2-12} V${y2} H${x2-2}`; }
+      else if(ty === "SS"){ const xl = Math.min(x1,x2) - 12; path = `M${x1},${y1} H${xl} V${y2} H${x2-2}`; }
+      else if(ty === "FF"){ const xr = Math.max(x1,x2) + 12; path = `M${x1},${y1} H${xr} V${y2} H${x2+2}`; }
+      else { path = `M${x1},${y1} H${x1-10} V${(y1+y2)/2} H${x2+14} V${y2} H${x2+2}`; }
+      const red = crit.has(t.id) && crit.has(pr.id);
+      paths += `<path d="${path}" fill="none" stroke="${red?"#c62828":"#222"}" stroke-width="1.6" marker-end="url(#gpA${red?"r":""})" ${d.hard?"":'stroke-dasharray="5 4"'}/>`;
+    }));
+    cv += `<svg class="gp-arrows" width="${W}" height="${H}"><defs>
+      <marker id="gpA" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#222"/></marker>
+      <marker id="gpAr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#c62828"/></marker></defs>${paths}</svg>`;
+    const c = this.$(".gp-canvas"); c.style.width = W + "px"; c.style.height = H + "px"; c.innerHTML = cv;
+    this.view = {a, dw};
+  }
+  drawRes(){
+    const dw = GP_ZOOM[this.zi], [a,b] = this.range(), W = (b-a+1)*dw;
+    this.$(".gp-th").style.gridTemplateColumns = "1fr 1fr";
+    this.$(".gp-th").innerHTML = `<div>الاسم Name</div><div>الدور الافتراضي Default role</div>`;
+    const rows = [];
+    this.p.resources.forEach(r => { rows.push({kind:"r", r}); if(this.rexp.has(r.id)) this.p.tasks.filter(t => t.res.some(x => x.rid === r.id)).forEach(t => rows.push({kind:"t", t, r})); });
+    const roles = this.p.roles;
+    let html = rows.map(o => o.kind === "r"
+      ? `<div class="gp-tr ${this.rsel === o.r.id ? "sel" : ""}" data-id="${o.r.id}" data-kind="r" style="grid-template-columns:1fr 1fr">
+          <div class="n"><span class="gp-tog" data-rtog>${this.rexp.has(o.r.id) ? "▼" : "◀"}</span>👤 ${gpEsc(o.r.name)}</div>
+          <div><select class="gp-rsel" data-rid="${o.r.id}"><option value="">undefined غير محدد</option>${roles.map(x=>`<option ${x===o.r.role?"selected":""}>${gpEsc(x)}</option>`).join("")}</select></div></div>`
+      : `<div class="gp-tr sub" data-id="${o.t.id}" data-kind="t" style="grid-template-columns:1fr 1fr"><div class="n" style="padding-inline-start:40px">📌 ${gpEsc(o.t.name)}</div><div class="d">${gpFmt(this.span(o.t)[0])} ← ${gpFmt(this.span(o.t)[1])}</div></div>`).join("");
+    if(!rows.length) html = `<div style="padding:30px 20px;color:#777;font-size:16px;line-height:1.8">لا توجد موارد بعد…<br>اضغطي 👤 <b>مورد جديد</b> لإضافة عضوة في الفريق.</div>`;
+    const fill = Math.max(0, 18 - rows.length);
+    html += `<div class="gp-tr" style="border:none;height:${fill*32+20}px"></div>`;
+    this.$(".gp-body").innerHTML = html;
+    this.drawHeader(a,b,dw);
+    const H = Math.max(rows.length*32 + fill*32 + 20, 200); let cv = "";
+    for(let n=a; n<=b; n++) if(!this.isW(n)) cv += `<div class="gp-we" style="left:${(n-a)*dw}px;width:${dw}px"></div>`;
+    const cols = ["#8fb0d3","#b39ddb","#80cbc4","#ffcc80","#f48fb1","#a5d6a7"];
+    rows.forEach((o,i) => {
+      const ts = o.kind === "r" ? this.p.tasks.filter(t => !this.isPar(t) && t.res.some(x => x.rid === o.r.id)) : [o.t];
+      ts.forEach((t,k) => { const [s,e] = this.span(t);
+        cv += `<div class="gp-bar" style="left:${(s-a)*dw+1}px;top:${i*32+8}px;width:${(e-s+1)*dw-2}px;--c:${o.kind==="r"?cols[o.r.id%cols.length]:"#cfd8dc"};cursor:default;opacity:${o.kind==="r"?.85:1}" title="${gpEsc(t.name)}"></div>`; });
+    });
+    const c = this.$(".gp-canvas"); c.style.width = W + "px"; c.style.height = H + "px"; c.innerHTML = cv;
+    this.view = {a, dw};
+  }
+
+  /* ---------- النقر على الصفوف ---------- */
+  rowClick(e){
+    if(e.target.closest("input,select")) return;
+    const row = e.target.closest(".gp-tr[data-id]");
+    if(this.tab === "res"){
+      if(!row){ this.rsel = null; return this.updSel(); }
+      if(row.dataset.kind === "r"){ const id = +row.dataset.id; this.rsel = id;
+        if(e.target.closest("[data-rtog]")){ this.rexp.has(id) ? this.rexp.delete(id) : this.rexp.add(id); this.render(); } else this.updSel(); }
+      return;
+    }
+    if(!row){ if(this.sel.size){ this.sel.clear(); this.updSel(); } return; }
+    const id = +row.dataset.id, t = this.byId(id);
+    if(e.target.closest("[data-tog]")){ t.col = !t.col; return this.render(); }
+    if(e.ctrlKey || e.metaKey){ this.sel.has(id) ? this.sel.delete(id) : this.sel.add(id); }
+    else if(e.shiftKey && this.sel.size){ const vis = this.rows().map(x => x.id), last = [...this.sel].pop(); const i1 = vis.indexOf(last), i2 = vis.indexOf(id); vis.slice(Math.min(i1,i2), Math.max(i1,i2)+1).forEach(x => this.sel.add(x)); }
+    else this.sel = new Set([id]);
+    this.updSel();
+  }
+
+  /* ---------- سحب الأشرطة وإنشاء الروابط ---------- */
+  barDown(e){
+    if(this.tab !== "gantt" || e.button !== 0) return;
+    const bar = e.target.closest("[data-bid]"); if(!bar) return;
+    const id = +bar.dataset.bid, t = this.byId(id);
+    if(!this.sel.has(id)){ this.sel = new Set([id]); this.updSel(); }
+    const mode = e.target.classList.contains("rz") ? "rz" : e.target.classList.contains("lk") ? "lk" : "mv";
+    if(this.isPar(t) && mode !== "lk") return;
+    e.preventDefault();
+    const x0 = e.clientX, w0 = bar.offsetWidth, cv = this.$(".gp-canvas"); let dx = 0, line = null;
+    const cr = cv.getBoundingClientRect(), br = bar.getBoundingClientRect();
+    const sx = (br.right - cr.left)/SCALE, sy = (br.top + br.height/2 - cr.top)/SCALE;
+    if(mode === "lk"){ line = document.createElementNS("http://www.w3.org/2000/svg","svg"); line.setAttribute("class","gp-link-line");
+      line.style.width = cv.style.width; line.style.height = cv.style.height;
+      line.innerHTML = `<line x1="${sx}" y1="${sy}" x2="${sx}" y2="${sy}" stroke="#1f7ae0" stroke-width="2.5" stroke-dasharray="6 4"/>`; cv.appendChild(line); }
+    const mv = ev => {
+      dx = (ev.clientX - x0) / SCALE;
+      if(mode === "mv") bar.style.transform = `translateX(${dx}px)`;
+      else if(mode === "rz") bar.style.width = Math.max(6, w0 + dx) + "px";
+      else { const l = line.firstChild; l.setAttribute("x2", (ev.clientX - cr.left)/SCALE); l.setAttribute("y2", (ev.clientY - cr.top)/SCALE); }
+    };
+    const up = ev => {
+      document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up);
+      if(mode === "lk"){ line.remove(); const el = document.elementFromPoint(ev.clientX, ev.clientY); const tb = el && el.closest("[data-bid]");
+        if(tb && +tb.dataset.bid !== id) this.addDep(+tb.dataset.bid, id, "FS"); else this.render(); return; }
+      const days = Math.round(dx / this.view.dw);
+      if(!days){ bar.style.transform = ""; bar.style.width = w0 + "px"; return; }
+      this.snap();
+      if(mode === "mv"){ t.start = t.ms ? t.start + days : this.nw(t.start + days); this.emit("dragMove"); }
+      else { const ne = Math.max(t.start, this.endOf(t) + days); t.dur = t.ms ? 0 : this.wdays(t.start, ne); this.emit("duration"); }
+      this.commit();
+    };
+    document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+  }
+  addDep(succId, predId, type="FS", silent=false){
+    const s = this.byId(succId), p = this.byId(predId); if(!s || !p) return false;
+    if(this.desc(p.id).includes(s.id) || this.desc(s.id).includes(p.id) || this.dependsOn(p.id, s.id)){ this.toast("⚠️ لا يمكن إنشاء هذه العلاقة (ستسبب حلقة)"); this.render(); return false; }
+    if(s.deps.some(d => d.id === p.id)){ this.render(); return false; }
+    if(!silent) this.snap();
+    s.deps.push({id:p.id, type, lag:0, hard:true});
+    this.emit("dependency"); if(!silent) this.commit();
+    return true;
+  }
+
+  /* ---------- الأوامر ---------- */
+  act(a){
+    const acts = {
+      newTask:()=>this.newTask(), delete:()=>this.tab==="res"?this.delRes():this.delTasks(), props:()=>this.tab==="res"?(this.rsel!=null&&this.resProps(this.rsel)):this.taskProps(this.ordSel()[0]),
+      cut:()=>{this.copy(); this.delTasks(true);}, copy:()=>this.copy(), paste:()=>this.paste(),
+      undo:()=>this.undo(), redo:()=>this.redo(),
+      indent:()=>this.indent(), unindent:()=>this.unindent(), up:()=>this.move(-1), down:()=>this.move(1),
+      link:()=>this.link(), unlink:()=>this.unlink(),
+      save:()=>this.save(), open:()=>this.$(".gp-file").click(), newProject:()=>this.newProject(),
+      export:()=>this.exportDlg(), print:()=>this.doExport("pdf"), projProps:()=>this.projProps(),
+      newRes:()=>this.resProps(null), resProps:()=>this.rsel!=null&&this.resProps(this.rsel), delRes:()=>this.delRes(),
+      zoomIn:()=>{ this.zi=Math.min(GP_ZOOM.length-1,this.zi+1); this.render(); }, zoomOut:()=>{ this.zi=Math.max(0,this.zi-1); this.render(); },
+      goStart:()=>this.scrollTo(this.p.start), goToday:()=>this.scrollTo(gpToday()),
+      past:()=>{ this.$(".gp-cwrap").scrollLeft -= 7*GP_ZOOM[this.zi]; }, future:()=>{ this.$(".gp-cwrap").scrollLeft += 7*GP_ZOOM[this.zi]; },
+      crit:()=>{ this.crit=!this.crit; if(this.crit) this.emit("critical"); this.render(); },
+      base:()=>{ if(!this.base && !this.p.baseline){ this.captureBase(); } this.base=!this.base; this.render(); },
+      baseSet:()=>{ this.captureBase(); this.base=true; this.render(); this.toast("📏 تم حفظ خط الأساس للمقارنة"); },
+      tabGantt:()=>{ this.tab="gantt"; this.render(); }, tabRes:()=>{ this.tab="res"; this.render(); },
+      find:()=>this.$(".gp-search").focus(), sample:()=>this.confirm("تحميل مثال مشروع المسرحية الكامل من الكتاب؟<br><small>سيحلّ محل المشروع الحالي (يمكنك التراجع ↶)</small>", ()=>{ this.snap(); this.p=this.make("full"); this.sel.clear(); this.commit(); }),
+      reset:()=>this.confirm("إعادة المشروع كما كان في بداية الشريحة؟", ()=>{ this.snap(); this.p=JSON.parse(JSON.stringify(this.initial)); this.sel.clear(); this.commit(); }),
+      help:()=>this.help(), tour:()=>{ this.tourOn=!this.tourOn; this.placeTour(); },
+      missions:()=>{ this.misOpen=!this.misOpen; this.drawMissions(); }, expandAll:()=>{ this.p.tasks.forEach(t=>t.col=false); this.render(); }, collapseAll:()=>{ this.p.tasks.forEach(t=>{ if(this.isPar(t)) t.col=true; }); this.render(); }
+    };
+    if(acts[a]) acts[a]();
+  }
+  scrollTo(n){ const [a] = this.range(); this.$(".gp-cwrap").scrollLeft = Math.max(0, (n-a)*GP_ZOOM[this.zi] - 30); }
+  captureBase(){ const m = {}; this.p.tasks.forEach(t => m[t.id] = this.span(t)); this.p.baseline = m; }
+
+  newTask(){
+    this.snap(); this.tab = "gantt";
+    const ids = this.ordSel(), ref = ids.length ? this.byId(ids[ids.length-1]) : null;
+    const t = this.newT(`مهمة_${toAr(this.p.nid)}`, this.nw(this.p.start), 1, ref ? ref.parent : null);
+    if(ref){ const i = this.blockEnd(this.idx(ref)); this.p.tasks.splice(i, 0, t); } else this.p.tasks.push(t);
+    this.sel = new Set([t.id]); this.editId = t.id;
+    this.commit();
+    const row = this.$(`.gp-tr[data-id="${t.id}"]`); if(row) this.$(".gp-body").scrollTop = Math.max(0, row.offsetTop - 200);
+    this.bindEdit();
+    this.emit("addTask"); if(this.p.tasks.filter(x => !this.isPar(x)).length >= 5) this.emit("tasks5");
+  }
+  bindEdit(){
+    const inp = this.$(".gp-ed"); if(!inp) return;
+    const fin = ok => { if(!this.editId) return; const t = this.byId(this.editId); this.editId = null; if(ok && inp.value.trim()) t.name = inp.value.trim(); this.render(); };
+    inp.addEventListener("keydown", e => { e.stopPropagation(); if(e.key === "Enter"){ e.preventDefault(); fin(true); } if(e.key === "Escape") fin(false); });
+    inp.addEventListener("blur", () => fin(true));
+  }
+  delTasks(silent){
+    const ids = this.ordSel(); if(!ids.length) return;
+    this.snap(); const m = this.parentSpans();
+    const all = new Set(); ids.forEach(id => { all.add(id); this.desc(id).forEach(x => all.add(x)); });
+    this.p.tasks = this.p.tasks.filter(t => !all.has(t.id));
+    this.p.tasks.forEach(t => t.deps = t.deps.filter(d => !all.has(d.id)));
+    this.fixOrphans(m); this.sel.clear(); this.commit();
+    if(!silent) this.toast("🗑️ تم حذف المهمة");
+  }
+  copy(){
+    const ids = this.ordSel(); if(!ids.length) return;
+    const tops = ids.filter(id => { let t = this.byId(id); while(t.parent){ if(ids.includes(t.parent)) return false; t = this.byId(t.parent); } return true; });
+    const list = []; tops.forEach(id => { const i = this.idx(this.byId(id)), e = this.blockEnd(i); this.p.tasks.slice(i,e).forEach(t => list.push(JSON.parse(JSON.stringify(t)))); });
+    this.clip = {list, tops}; this.render(); this.toast("📄 تم النسخ");
+  }
+  paste(){
+    if(!this.clip) return; this.snap();
+    const map = {}; this.clip.list.forEach(t => map[t.id] = this.p.nid++);
+    const ref = this.ordSel().length ? this.byId(this.ordSel().slice(-1)[0]) : null;
+    const items = this.clip.list.map(t => ({...JSON.parse(JSON.stringify(t)), id:map[t.id],
+      parent: this.clip.tops.includes(t.id) ? (ref ? ref.parent : null) : map[t.parent],
+      deps: t.deps.filter(d => map[d.id] || this.byId(d.id)).map(d => ({...d, id: map[d.id] || d.id}))}));
+    if(ref){ const i = this.blockEnd(this.idx(ref)); this.p.tasks.splice(i, 0, ...items); } else this.p.tasks.push(...items);
+    this.sel = new Set(items.filter(t => this.clip.tops.includes(+Object.keys(map).find(k => map[k] === t.id))).map(t => t.id));
+    this.commit(); this.toast("📋 تم اللصق");
+  }
+  undo(){ if(!this.U.length) return; this.R.push(JSON.stringify(this.p)); this.p = JSON.parse(this.U.pop()); this.sel.clear(); this.render(); }
+  redo(){ if(!this.R.length) return; this.U.push(JSON.stringify(this.p)); this.p = JSON.parse(this.R.pop()); this.sel.clear(); this.render(); }
+  indent(){
+    const ids = this.ordSel(); if(!ids.length) return; this.snap(); let did = false;
+    for(const id of ids){ const t = this.byId(id), i = this.idx(t), d = this.depth(t);
+      for(let j=i-1; j>=0; j--){ const x = this.p.tasks[j], dx = this.depth(x); if(dx < d) break;
+        if(dx === d){ t.parent = x.id; x.col = false; x.deps = x.deps; if(x.ms) x.ms = false; did = true; break; } } }
+    if(did){ this.commit(); this.emit("indent"); } else { this.U.pop(); this.toast("⚠️ لا توجد مهمة فوقها في نفس المستوى"); }
+  }
+  unindent(){
+    const ids = this.ordSel().reverse(); if(!ids.length) return; this.snap(); const m = this.parentSpans(); let did = false;
+    for(const id of ids){ const t = this.byId(id); if(!t.parent) continue; const P = this.byId(t.parent);
+      const i = this.idx(t), e = this.blockEnd(i), block = this.p.tasks.splice(i, e-i);
+      t.parent = P.parent; const pi = this.idx(P), pe = this.blockEnd(pi); this.p.tasks.splice(pe, 0, ...block); did = true; }
+    if(did){ this.fixOrphans(m); this.commit(); this.emit("unindent"); } else this.U.pop();
+  }
+  move(dir){
+    const id = this.ordSel()[0]; if(id == null) return; const t = this.byId(id), T = this.p.tasks, i = this.idx(t), e = this.blockEnd(i), d = this.depth(t);
+    if(dir < 0){ let j = i-1; while(j >= 0 && T[j].parent !== t.parent){ if(this.depth(T[j]) < d) return; j--; } if(j < 0) return;
+      this.snap(); const block = T.splice(i, e-i); T.splice(j, 0, ...block); }
+    else { if(e >= T.length || T[e].parent !== t.parent) return; const ne = this.blockEnd(e); this.snap(); const nb = T.splice(e, ne-e); T.splice(i, 0, ...nb); }
+    this.commit(); this.emit("move");
+  }
+  link(){
+    const ids = this.ordSel(); if(ids.length < 2){ this.toast("حدّدي مهمتين أو أكثر (Ctrl + نقر) ثم اضغطي 🔗"); return; }
+    this.snap(); let ok = false; for(let i=1; i<ids.length; i++) ok = this.addDep(ids[i], ids[i-1], "FS", true) || ok;
+    if(ok) this.commit(); else this.U.pop();
+  }
+  unlink(){
+    const ids = this.ordSel(); if(!ids.length) return; this.snap();
+    if(ids.length === 1) this.byId(ids[0]).deps = [];
+    else this.p.tasks.forEach(t => { if(ids.includes(t.id)) t.deps = t.deps.filter(d => !ids.includes(d.id)); });
+    this.commit(); this.toast("✂🔗 تم فك الربط");
+  }
+  delRes(){
+    if(this.rsel == null) return; const id = this.rsel; this.snap();
+    this.p.resources = this.p.resources.filter(r => r.id !== id); this.p.tasks.forEach(t => t.res = t.res.filter(x => x.rid !== id));
+    this.rsel = null; this.render();
+  }
+  newProject(){ this.confirm("إنشاء مشروع جديد فارغ؟<br><small>سيتم مسح المشروع الحالي (يمكنك التراجع ↶)</small>", () => { this.snap(); this.p = this.make("empty"); this.sel.clear(); this.rsel = null; this.commit(); }); }
+  save(){
+    const name = (this.p.name || "مشروع") + ".gan.json";
+    const real = gpDownload(JSON.stringify({app:"GanttProject-Sim", version:1, project:this.p}, null, 1), name, "application/json");
+    this.toast("💾 تم حفظ الملف: " + real + " (يُفتح في هذا المحاكي فقط، وليس في برنامج جانت بروجكت الحقيقي)"); this.emit("save");
+  }
+  openFile(f){
+    if(!f) return; const rd = new FileReader();
+    rd.onload = () => { try{ const o = JSON.parse(rd.result), p = o.project || o;
+        if(!Array.isArray(p.tasks)) throw 0; this.snap();
+        this.p = Object.assign(this.make("empty"), p); this.p.tasks.forEach(t => { t.deps = t.deps || []; t.res = t.res || []; });
+        this.sel.clear(); this.commit(); this.toast("📂 تم فتح المشروع"); this.emit("open");
+      } catch(e){ this.toast("⚠️ الملف غير صالح"); } };
+    rd.readAsText(f); this.$(".gp-file").value = "";
+  }
+
+  /* ---------- القوائم ---------- */
+  closeFloat(){ $$(".gp-cm,.gp-tip", this.layer).forEach(x => x.remove()); $$(".gp-mi.open", this.root).forEach(x => x.classList.remove("open")); $$(".gp-tb-badge.on", this.layer).forEach(x=>x.classList.remove("on")); }
+  at(clientX, clientY){ const r = this.root.getBoundingClientRect(); return [(clientX - r.left)/SCALE, (clientY - r.top)/SCALE]; }
+  showMenu(items, x, y){
+    this.closeFloat(); const m = document.createElement("div"); m.className = "gp-cm";
+    m.innerHTML = items.map(it => it === "-" ? "<hr>" : `<button data-a="${it[0]}" ${it[3]===false?"disabled":""}><span class="i">${it[2]||""}</span>${it[1]}${it[4]?`<span class="k">${it[4]}</span>`:""}</button>`).join("");
+    this.layer.appendChild(m);
+    const W = this.root.offsetWidth, H = this.root.offsetHeight;
+    m.style.left = Math.min(x, W - m.offsetWidth - 6) + "px"; m.style.top = Math.min(y, H - m.offsetHeight - 6) + "px";
+    return m;
+  }
+  menu(btn){
+    const open = btn.classList.contains("open"); this.closeFloat(); if(open) return;
+    const s = this.sel.size > 0, g = this.tab === "gantt";
+    const M = {
+      project:[["newProject","جديد New","🆕",true,"Ctrl+N"],["open","فتح Open…","📂",true,"Ctrl+O"],["save","حفظ Save","💾",true,"Ctrl+S"],"-",["projProps","خصائص Properties…","⚙️"],"-",["export","تصدير Export…","📤"],["print","طباعة Print…","🖨️",true,"Ctrl+P"],"-",["reset","↺ إعادة المشروع الأصلي","↺"]],
+      edit:[["undo","تراجع Undo","↶",!!this.U.length,"Ctrl+Z"],["redo","إعادة Redo","↷",!!this.R.length,"Ctrl+Y"],"-",["cut","قص Cut","✂️",s,"Ctrl+X"],["copy","نسخ Copy","📄",s,"Ctrl+C"],["paste","لصق Paste","📋",!!this.clip,"Ctrl+V"],"-",["delete","حذف Delete","✖",s||this.rsel!=null,"Delete"],["find","بحث Find","🔍",true,"Ctrl+F"]],
+      view:[["zoomIn","تكبير Zoom In","🔍"],["zoomOut","تصغير Zoom Out","🔎"],"-",["crit",(this.crit?"✓ ":"")+"المسار الحرج Critical path","🔴"],["base",(this.base?"✓ ":"")+"خطوط الأساس Baseline","📏"],["baseSet","حفظ خط أساس جديد","📌"],"-",["expandAll","توسيع كل المهام","▼"],["collapseAll","طي المهام الرئيسة","◀"],"-",["tabGantt","مخطط جانت Gantt","📊"],["tabRes","مخطط الموارد Resources","👥"]],
+      tasks:[["newTask","مهمة جديدة New task","🕘",true,"Ctrl+T"],["props","خصائص المهمة Task Properties…","ℹ️",s&&g,"Alt+Enter"],["delete","حذف المهمة Delete Task","✖",s&&g,"Delete"],"-",["indent","مسافة بادئة Indent","⇥",s],["unindent","إلغاء المسافة Unindent","⇤",s],["up","أعلى Up","↑",s],["down","أسفل Down","↓",s],"-",["link","ربط المهام Link","🔗",this.sel.size>1],["unlink","فك الربط Unlink","✂",s]],
+      res:[["newRes","مورد جديد New Resource","👤"],["resProps","خصائص المورد…","ℹ️",this.rsel!=null&&!g],["delRes","حذف المورد","✖",this.rsel!=null&&!g],"-",["tabRes","مخطط الموارد Resources Chart","👥"],["projProps","أدوار الموارد…","🎭"]],
+      help:[["help","اختصارات لوحة المفاتيح","⌨️"],["tour","جولة في الواجهة","🧭"]]
+    }[btn.dataset.m];
+    btn.classList.add("open");
+    const r = btn.getBoundingClientRect(), [x,y] = this.at(r.left, r.bottom);
+    const m = this.showMenu(M, x, y); const w = m.offsetWidth; const [xr] = this.at(r.right, 0); m.style.left = Math.max(4, xr - w) + "px";
+  }
+  ctx(e){
+    const [x,y] = this.at(e.clientX, e.clientY);
+    if(this.tab === "res") return this.showMenu([["newRes","مورد جديد","👤"],["resProps","خصائص المورد…","ℹ️",this.rsel!=null],["delRes","حذف المورد","✖",this.rsel!=null]], x, y);
+    const s = this.sel.size > 0;
+    this.showMenu([["newTask","مهمة جديدة New task","🕘",true,"Ctrl+T"],["props","خصائص المهمة Task Properties…","ℹ️",s,"Alt+Enter"],"-",
+      ["unindent","إلغاء المسافة Unindent","⇤",s],["indent","مسافة بادئة Indent","⇥",s],["up","أعلى Up","↑",s],["down","أسفل Down","↓",s],"-",
+      ["copy","نسخ","📄",s],["cut","قص","✂️",s],["paste","لصق","📋",!!this.clip],["delete","حذف المهمة Delete Task","✖",s]], x, y);
+  }
+
+  /* ---------- النوافذ الحوارية ---------- */
+  dialog({title, tabs, ok, init, w=880}){
+    this.closeFloat(); this.closeDlg();
+    const ov = document.createElement("div"); ov.className = "gp-ov";
+    ov.innerHTML = `<div class="gp-dlg" style="width:${w}px"><div class="gp-dh"><span class="gp-logo"></span>${title}<button class="x">✕</button></div>
+      ${tabs.length > 1 ? `<div class="gp-dtabs">${tabs.map((t,i)=>`<button class="gp-dtab ${i?"":"on"}" data-i="${i}">${t.label}</button>`).join("")}</div>` : ""}
+      <div class="gp-dbody">${tabs.map((t,i)=>`<div class="gp-pane" ${i?"hidden":""}>${t.html}</div>`).join("")}</div>
+      <div class="gp-dfoot"><button class="gp-btn pri ok">موافق</button><button class="gp-btn cancel">إلغاء</button></div></div>`;
+    this.layer.appendChild(ov); this.dlg = ov;
+    $$(".gp-dtab", ov).forEach(b => b.onclick = () => { $$(".gp-dtab", ov).forEach(x => x.classList.toggle("on", x === b)); $$(".gp-pane", ov).forEach((p,i) => p.hidden = i !== +b.dataset.i); });
+    $(".x", ov).onclick = $(".cancel", ov).onclick = () => this.closeDlg();
+    $(".ok", ov).onclick = () => { if(ok && ok(ov) === false) return; this.closeDlg(); };
+    if(init) init(ov);
+    const f = $(".gp-pane input:not([type=checkbox]):not([readonly])", ov); if(f) setTimeout(() => f.focus(), 50);
+    return ov;
+  }
+  closeDlg(){ if(this.dlg){ this.dlg.remove(); this.dlg = null; } }
+  confirm(msg, yes){ this.dialog({title:"GanttProject", w:560, tabs:[{label:"", html:`<div style="font-size:18px;line-height:1.8;padding:20px 6px">${msg}</div>`}], ok:()=>{ yes(); }}); $(".gp-dbody", this.dlg).style.minHeight = "0"; }
+  help(){
+    this.dialog({title:"مساعدة — اختصارات لوحة المفاتيح", w:640, tabs:[{label:"", html:`<table class="gp-tbl" style="font-size:16px">
+      <tr><th>الأمر</th><th>الاختصار</th></tr>
+      <tr><td>مهمة جديدة</td><td dir="ltr">Ctrl + T</td></tr><tr><td>خصائص المهمة</td><td>ضغطة مزدوجة / Alt + Enter</td></tr>
+      <tr><td>حذف</td><td>Delete</td></tr><tr><td>تراجع / إعادة</td><td dir="ltr">Ctrl + Z / Ctrl + Y</td></tr>
+      <tr><td>نسخ / قص / لصق</td><td dir="ltr">Ctrl + C / X / V</td></tr><tr><td>حفظ / فتح</td><td dir="ltr">Ctrl + S / Ctrl + O</td></tr>
+      <tr><td>بحث</td><td dir="ltr">Ctrl + F</td></tr><tr><td>تحديد عدة مهام</td><td>Ctrl + نقر / Shift + نقر</td></tr>
+      <tr><td>تغيير التاريخ</td><td>اسحبي الشريط أفقيًا</td></tr><tr><td>تغيير المدة</td><td>اسحبي طرف الشريط الأيمن</td></tr>
+      <tr><td>إنشاء علاقة</td><td>اسحبي الدائرة ⚪ من شريط إلى آخر</td></tr><tr><td>قائمة المهمة</td><td>زر الفأرة الأيمن</td></tr></table>
+      <p class="gp-mini" style="margin-top:12px">هذه محاكاة تعليمية مبسّطة لبرنامج GanttProject تعمل داخل المتصفح.</p>`}]});
+  }
+  taskProps(id){
+    const t = this.byId(id); if(!t) return;
+    const par = this.isPar(t), [s,e] = this.span(t);
+    const others = this.p.tasks.filter(x => x.id !== t.id && !this.desc(t.id).includes(x.id));
+    const depRow = d => `<tr><td><select class="dt">${others.map(o=>`<option value="${o.id}" ${d&&d.id===o.id?"selected":""}>${toAr(o.id)} — ${gpEsc(o.name)}</option>`).join("")}</select></td>
+      <td><select class="dy">${Object.entries(GP_REL).map(([k,v])=>`<option value="${k}" ${(d?d.type:"FS")===k?"selected":""}>${v}</option>`).join("")}</select></td>
+      <td><input type="number" class="dl" value="${d?d.lag:0}" style="width:80px"></td>
+      <td><select class="dh"><option value="1" ${!d||d.hard?"selected":""}>قوي Strong</option><option value="0" ${d&&!d.hard?"selected":""}>مرن Rubber</option></select></td>
+      <td><button class="gp-btn dx" style="min-width:0">✕</button></td></tr>`;
+    const resRow = x => `<tr><td><select class="rn">${this.p.resources.map(r=>`<option value="${r.id}" ${x&&x.rid===r.id?"selected":""}>${gpEsc(r.name)}</option>`).join("")}</select></td>
+      <td><input type="number" class="ru" value="${x?x.unit:100}" style="width:90px"></td><td><input type="checkbox" class="rc" ${x&&x.coord?"checked":""}></td>
+      <td class="rr">${x ? gpEsc((this.p.resources.find(r=>r.id===x.rid)||{}).role||"") : ""}</td><td><button class="gp-btn rx" style="min-width:0">✕</button></td></tr>`;
+    const gen = `<div style="display:grid;grid-template-columns:1.1fr 1fr;gap:22px"><div class="gp-f">
+        <label>الاسم</label><input type="text" name="name" value="${gpEsc(t.name)}">
+        <label>مَعلَم رئيس Milestone</label><span><input type="checkbox" name="ms" ${t.ms?"checked":""} ${par?"disabled":""}></span>
+        <label>تاريخ البدء</label><input type="date" name="start" value="${gpIso(s)}" ${par?"disabled":""}>
+        <label>تاريخ الانتهاء</label><input type="text" name="end" readonly value="${gpFmt(e)}">
+        <label>المدة (أيام عمل)</label><input type="number" name="dur" min="1" value="${par?this.wdays(s,e):(t.ms?0:t.dur)}" ${par||t.ms?"disabled":""}>
+        <label>الأولوية Priority</label><select name="pri">${GP_PRI.map(p=>`<option value="${p[0]}" ${t.pri===p[0]?"selected":""}>${p[2]} ${p[1]}</option>`).join("")}</select>
+        <label>التقدم Progress ٪</label><input type="number" name="prog" min="0" max="100" step="5" value="${t.prog}">
+        <label>الألوان</label><input type="color" name="color" value="${t.color||"#8fb0d3"}" style="width:90px;height:32px">
+      </div><div><div class="gp-yel">تحرير ملاحظات…</div><textarea name="notes" style="width:100%;height:270px">${gpEsc(t.notes)}</textarea></div></div>
+      ${par?`<p class="gp-mini">هذه مهمة رئيسة: تاريخها ومدتها تُحسب تلقائيًا من مهامها الفرعية.</p>`:""}`;
+    const pre = `<div class="row" style="gap:8px;margin-bottom:10px"><button class="gp-btn addD">أضف</button><span class="gp-mini">المهام السابقة (Predecessors): المهام التي تعتمد عليها هذه المهمة</span></div>
+      <table class="gp-tbl"><thead><tr><th>ID — اسم المهمة Task name</th><th>النوع Type</th><th>تأخير Lag</th><th>قوة العلاقة Link hardness</th><th></th></tr></thead><tbody class="dbody">${t.deps.map(depRow).join("")}</tbody></table>`;
+    const rs = this.p.resources.length ? `<div class="row" style="gap:8px;margin-bottom:10px"><button class="gp-btn addR">أضف</button><span class="gp-mini">اختاري اسم المورد (Resource Name) من القائمة</span></div>
+      <table class="gp-tbl"><thead><tr><th>Resource Name اسم المورد</th><th>Unit الوحدة</th><th>منسّق</th><th>Role الدور</th><th></th></tr></thead><tbody class="rbody">${t.res.map(resRow).join("")}</tbody></table>`
+      : `<div style="padding:30px;font-size:17px;color:#777;line-height:1.8">لا توجد موارد في المشروع بعد.<br>أضيفي موردًا من زر 👤 <b>مورد جديد</b> أولًا.</div>`;
+    this.dialog({title:`Properties for ${gpEsc(t.name)} — خصائص المهمة`, w:960,
+      tabs:[{label:"📝 شامل General", html:gen},{label:"⤴ Predecessors المهام السابقة", html:pre},{label:"👥 Resources الموارد", html:rs}],
+      init:ov => {
+        const F = n => $(`[name=${n}]`, ov);
+        const upd = () => { if(par) return; const st = gpFromIso(F("start").value) ?? t.start; const ms = F("ms").checked; F("dur").disabled = ms;
+          const tmp = {start: ms ? st : this.nw(st), dur: ms ? 0 : Math.max(1, +F("dur").value || 1), ms}; F("end").value = gpFmt(this.endOf(tmp)); };
+        ["start","dur","ms"].forEach(n => F(n).addEventListener("input", upd)); F("ms").addEventListener("change", upd);
+        const bindRows = () => { $$(".dx", ov).forEach(b => b.onclick = () => b.closest("tr").remove()); $$(".rx", ov).forEach(b => b.onclick = () => b.closest("tr").remove());
+          $$(".rn", ov).forEach(s => s.onchange = () => { s.closest("tr").querySelector(".rr").textContent = (this.p.resources.find(r=>r.id===+s.value)||{}).role || ""; }); };
+        const aD = $(".addD", ov); if(aD) aD.onclick = () => { if(!others.length) return; $(".dbody", ov).insertAdjacentHTML("beforeend", depRow(null)); bindRows(); };
+        const aR = $(".addR", ov); if(aR) aR.onclick = () => { $(".rbody", ov).insertAdjacentHTML("beforeend", resRow(null)); bindRows(); $$(".rn", ov).slice(-1)[0].onchange(); };
+        bindRows();
+      },
+      ok:ov => {
+        const F = n => $(`[name=${n}]`, ov);
+        const before = JSON.stringify(t);
+        this.snap(); const oldDur = t.dur, oldPri = t.pri, oldMs = t.ms, oldProg = t.prog, oldStart = t.start, oldDeps = t.deps.length, oldRes = t.res.length;
+        t.name = F("name").value.trim() || t.name; t.pri = F("pri").value; t.notes = F("notes").value;
+        t.prog = Math.max(0, Math.min(100, +F("prog").value || 0));
+        const col = F("color").value; t.color = col.toLowerCase() === "#8fb0d3" ? "" : col;
+        if(!par){ t.ms = F("ms").checked; const st = gpFromIso(F("start").value); if(st != null) t.start = t.ms ? st : this.nw(st); t.dur = t.ms ? 0 : Math.max(1, +F("dur").value || 1); if(!t.ms && t.dur === 0) t.dur = 1; }
+        // التبعيات
+        const deps = []; let bad = false;
+        $$(".dbody tr", ov).forEach(tr => { const pid = +tr.querySelector(".dt").value; if(!pid || deps.some(d=>d.id===pid)) return;
+          if(this.dependsOn(pid, t.id)){ bad = true; return; }
+          deps.push({id:pid, type:tr.querySelector(".dy").value, lag:+tr.querySelector(".dl").value || 0, hard:tr.querySelector(".dh").value === "1"}); });
+        t.deps = deps; if(bad) this.toast("⚠️ تم تجاهل علاقة تسبب حلقة");
+        // الموارد
+        if($(".rbody", ov)){ const rs = []; $$(".rbody tr", ov).forEach(tr => { const rid = +tr.querySelector(".rn").value; if(rid && !rs.some(x=>x.rid===rid)) rs.push({rid, unit:+tr.querySelector(".ru").value || 100, coord:tr.querySelector(".rc").checked}); }); t.res = rs; }
+        if(JSON.stringify(t) === before) this.U.pop();
+        if(t.ms && !t.dur) t.dur = 0;
+        this.commit();
+        if(t.dur !== oldDur && !t.ms) this.emit("duration");
+        if(t.start !== oldStart) this.emit("startDate");
+        if(t.pri !== oldPri){ this.emit("priority"); if(t.pri === "highest") this.emit("highest"); }
+        if(t.ms && !oldMs) this.emit("milestone");
+        if(t.prog !== oldProg && t.prog > 0) this.emit("progress");
+        if(t.deps.length > oldDeps) this.emit("dependency");
+        if(t.res.length > oldRes) this.emit("assign");
+      }});
+  }
+  projProps(){
+    const p = this.p, days = [0,1,2,3,4,5,6];
+    const roleList = () => p._tmpRoles.map((r,i)=>`<div><span>${gpEsc(r)}</span>${i?`<button data-ri="${i}" title="حذف">✕</button>`:""}</div>`).join("");
+    p._tmpRoles = [...p.roles];
+    this.dialog({title:"Project Properties — خصائص المشروع", w:900, tabs:[
+      {label:"Name and description الاسم والوصف", html:`<div class="gp-yel">Project</div><div class="gp-f">
+        <label>الاسم</label><input type="text" name="name" value="${gpEsc(p.name)}" placeholder="مثال: عمل مسرحي">
+        <label>Organization المؤسسة</label><input type="text" name="org" value="${gpEsc(p.org)}" placeholder="مثال: المدرسة">
+        <label>Web Link</label><input type="text" name="web" value="${gpEsc(p.web)}">
+        <label>Description الوصف</label><textarea name="desc" style="height:150px">${gpEsc(p.desc)}</textarea></div>`},
+      {label:"تقويم Calendar", html:`<div class="gp-yel">تقويم المشروع وتاريخ البدء</div><div class="gp-f">
+        <label>أيام نهاية الأسبوع</label><div class="row" style="gap:14px">${days.map(d=>`<label style="display:flex;gap:4px;align-items:center"><input type="checkbox" name="we${d}" ${p.weekend.includes(d)?"checked":""}>${GP_WD[d]}</label>`).join("")}</div>
+        <label>في عطلة نهاية الأسبوع</label><select disabled><option>no tasks can run — لا يمكن تنفيذ المهام</option></select>
+        <label>تاريخ بدء جديد New Start Date</label><input type="date" name="start" value="${gpIso(p.start)}">
+        <label></label><div class="gp-rad" style="font-size:15px"><label><input type="radio" name="mv" value="1" checked> نقل جميع المهام مع تاريخ البدء الجديد</label><label><input type="radio" name="mv" value="0"> إبقاء تواريخ المهام كما هي</label></div></div>`},
+      {label:"أدوار الموارد Resource roles", html:`<div class="gp-yel">Resource role</div>
+        <div class="row" style="gap:8px;margin-bottom:10px"><input type="text" class="nr" data-enter="1" placeholder="<Type new role name here> اكتبي اسم الدور ثم Enter" style="flex:1"><button class="gp-btn addRole">أضف</button></div>
+        <div class="gp-roles">${roleList()}</div>`}],
+      init:ov => {
+        const rl = $(".gp-roles", ov), inp = $(".nr", ov);
+        const bind = () => $$("[data-ri]", rl).forEach(b => b.onclick = () => { p._tmpRoles.splice(+b.dataset.ri, 1); rl.innerHTML = roleList(); bind(); });
+        const add = () => { const v = inp.value.trim(); if(v && !p._tmpRoles.includes(v)){ p._tmpRoles.push(v); rl.innerHTML = roleList(); bind(); rl.scrollTop = 9999; } inp.value = ""; inp.focus(); };
+        $(".addRole", ov).onclick = add;
+        inp.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === "Tab"){ e.preventDefault(); e.stopPropagation(); add(); } });
+        bind();
+      },
+      ok:ov => {
+        const F = n => $(`[name=${n}]`, ov); this.snap();
+        const oldRoles = p.roles.length, oldStart = p.start;
+        p.name = F("name").value.trim(); p.org = F("org").value.trim(); p.web = F("web").value.trim(); p.desc = F("desc").value;
+        const we = days.filter(d => F("we"+d).checked); p.weekend = we.length >= 7 ? [5,6] : we;
+        p.roles = [...p._tmpRoles]; delete p._tmpRoles;
+        const ns = gpFromIso(F("start").value);
+        if(ns != null && ns !== oldStart){ p.start = ns; if($("[name=mv]:checked", ov).value === "1"){ const dlt = ns - oldStart; p.tasks.forEach(t => { if(!this.isPar(t)) t.start = t.ms ? t.start + dlt : this.nw(t.start + dlt); }); this.emit("shift"); } }
+        p.tasks.forEach(t => { if(!t.ms && !this.isPar(t)) t.start = this.nw(t.start); });
+        this.commit();
+        if(p.name && p.org) this.emit("projectProps");
+        if(p.weekend.includes(5) && p.weekend.includes(6)) this.emit("weekend");
+        if(p.roles.length > oldRoles) this.emit("role");
+      }});
+  }
+  resProps(id){
+    const p = this.p, r = id != null ? p.resources.find(x => x.id === id) : null;
+    const asg = r ? p.tasks.filter(t => t.res.some(x => x.rid === r.id)) : [];
+    this.dialog({title:"Resources — الموارد", w:760, tabs:[
+      {label:"📝 شامل", html:`<div class="gp-f">
+        <label>الاسم</label><input type="text" name="name" value="${r?gpEsc(r.name):""}" placeholder="مثال: نورة">
+        <label>الهاتف</label><input type="text" name="phone" value="${r?gpEsc(r.phone):""}">
+        <label>البريد</label><input type="text" name="email" value="${r?gpEsc(r.email):""}">
+        <label>الدور الافتراضي</label><select name="role"><option value="">undefined غير محدد</option>${p.roles.map(x=>`<option ${r&&r.role===x?"selected":""}>${gpEsc(x)}</option>`).join("")}</select></div>
+        <p class="gp-mini" style="margin-top:14px">💡 لإضافة أدوار جديدة: المشروع ← خصائص ← أدوار الموارد</p>`},
+      {label:"📋 Assignments المهام المسندة", html: asg.length ? `<table class="gp-tbl"><tr><th>ID</th><th>Task name</th><th>Unit</th></tr>${asg.map(t=>`<tr><td>${toAr(t.id)}</td><td>${gpEsc(t.name)}</td><td>١٠٠</td></tr>`).join("")}</table>` : `<p class="gp-mini" style="font-size:16px">لم تُسند أي مهمة لهذا المورد بعد.</p>`}],
+      ok:ov => {
+        const F = n => $(`[name=${n}]`, ov), name = F("name").value.trim();
+        if(!name){ F("name").focus(); F("name").style.borderColor = "#e53935"; return false; }
+        this.snap(); const oldRole = r ? r.role : "";
+        const o = r || {id:p.rid++}; o.name = name; o.phone = F("phone").value; o.email = F("email").value; o.role = F("role").value;
+        if(!r) p.resources.push(o);
+        this.tab = "res"; this.rsel = o.id; this.render();
+        if(!r){ this.emit("resource"); this.toast("👤 تمت إضافة " + name); }
+        if(o.role && o.role !== oldRole){ this.emit("roleAssign"); if(o.role === "مدير المشروع") this.emit("pm"); }
+      }});
+  }
+
+  /* ---------- التصدير ---------- */
+  exportDlg(){
+    this.dialog({title:"Export wizard — معالج التصدير", w:760, tabs:[{label:"", html:`<div class="gp-yel">Step 1 (of 2) حدّدي المُصدِّر</div>
+      <div class="gp-rad">
+        <label class="dis"><input type="radio" name="ex" value="mpx" disabled> ملف Microsoft Project (MPX) <span class="gp-mini">— غير متاح في المحاكاة</span></label>
+        <label class="dis"><input type="radio" name="ex" value="html" disabled> HTML report تقرير</label>
+        <label><input type="radio" name="ex" value="pdf" checked> 📄 PDF تقرير</label>
+        <label><input type="radio" name="ex" value="png"> 🖼️ Raster image file صورة PNG</label>
+        <label><input type="radio" name="ex" value="csv"> 📊 Spreadsheet جدول بيانات (CSV)</label>
+        <label><input type="radio" name="ex" value="json"> 💾 ملف المشروع (JSON)</label>
+      </div>
+      <div class="gp-f" style="margin-top:14px"><label>اسم الملف</label><input type="text" name="fn" value="${gpEsc(this.p.name || "untitled")}"></div>`}],
+      ok:ov => { this.doExport($("[name=ex]:checked", ov).value, $("[name=fn]", ov).value.trim() || "untitled"); }});
+    $(".ok", this.dlg).textContent = "موافق";
+  }
+  doExport(kind, fn){
+    fn = fn || this.p.name || "untitled";
+    if(kind === "json"){ gpDownload(JSON.stringify({app:"GanttProject-Sim", version:1, project:this.p}, null, 1), fn + ".gan.json", "application/json"); }
+    else if(kind === "csv"){
+      const L = [["ID","الاسم Name","تاريخ البدء Begin","تاريخ الانتهاء End","المدة Duration","التقدم %","الأولوية","مَعلَم","الموارد","المهام السابقة"]];
+      this.p.tasks.forEach(t => { const [s,e] = this.span(t); L.push([t.id, "  ".repeat(this.depth(t)) + t.name, gpIso(s), gpIso(e), this.isPar(t) ? this.wdays(s,e) : t.dur, t.prog, (GP_PRI.find(x=>x[0]===t.pri)||[])[1], t.ms ? "نعم" : "", t.res.map(x=>this.resName(x.rid)).join(" - "), t.deps.map(d=>d.id + d.type).join(" ")]); });
+      gpDownload("﻿" + L.map(r => r.map(c => `"${String(c ?? "").replace(/"/g,'""')}"`).join(",")).join("\r\n"), fn + ".csv", "text/csv;charset=utf-8");
+    }
+    else {
+      const url = this.png();
+      if(kind === "png") gpDownload(url, fn + ".png");
+      else {
+        const w = window.open("", "_blank");
+        if(!w){ gpDownload(url, fn + ".png"); this.toast("⚠️ تعذّر فتح نافذة الطباعة — تم تنزيل صورة بدلًا منها"); this.emit("export"); return; }
+        w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>${gpEsc(fn)}</title><style>@page{size:A4 landscape;margin:10mm}body{margin:0;font-family:Tahoma}img{width:100%}p{color:#777;font-size:12px}</style></head><body><img src="${url}"><p>اختاري «حفظ بصيغة PDF» من نافذة الطباعة</p><script>setTimeout(function(){print()},500)<\/script></body></html>`);
+        w.document.close();
+      }
+    }
+    this.toast(kind === "pdf" ? "🖨️ اختاري «حفظ بصيغة PDF» من نافذة الطباعة" : "📤 تم التصدير بنجاح — راجعي مجلد التنزيلات"); this.emit("export");
+  }
+  png(){
+    const tasks = this.p.tasks; let [a,b] = this.range(); if(tasks.length){ const sp = tasks.map(t => this.span(t)); a = Math.min(...sp.map(x=>x[0])) - 2; b = Math.max(...sp.map(x=>x[1])) + 4; }
+    const dw = 22, rh = 30, tw = 460, top = 70, hh = 50;
+    const W = tw + (b-a+1)*dw, H = top + hh + tasks.length*rh + 30, k = 2;
+    const c = document.createElement("canvas"); c.width = W*k; c.height = H*k; const g = c.getContext("2d"); g.scale(k,k);
+    const F = (s,w=400) => `${w} ${s}px Cairo, Tahoma, sans-serif`;
+    g.fillStyle = "#fff"; g.fillRect(0,0,W,H);
+    g.direction = "rtl"; g.textAlign = "right"; g.fillStyle = "#2a1b4d"; g.font = F(22,800); g.fillText(`${this.p.name || "مشروع"}${this.p.org ? " — " + this.p.org : ""}`, W-16, 36);
+    g.font = F(13); g.fillStyle = "#777"; g.fillText(`GanttProject • ${gpFmt(this.p.start)}`, W-16, 58);
+    const cw = W - tw; // عرض منطقة المخطط (يسار)
+    // رأس الجدول
+    g.fillStyle = "#e6e6e6"; g.fillRect(cw, top, tw, hh); g.fillStyle = "#f4f4f4"; g.fillRect(0, top, cw, hh);
+    g.fillStyle = "#222"; g.font = F(14,800); g.textAlign = "center";
+    g.fillText("الاسم Name", cw + tw - 130, top + 32); g.fillText("البدء", cw + 140, top + 32); g.fillText("الانتهاء", cw + 50, top + 32);
+    g.direction = "ltr"; let lastM = -1;
+    for(let n=a; n<=b; n++){ const d = gpD(n), x = (n-a)*dw;
+      if(!this.isW(n)){ g.fillStyle = "#efefef"; g.fillRect(x, top + hh, dw, tasks.length*rh); }
+      g.fillStyle = "#444"; g.font = F(10); g.textAlign = "center"; g.fillText(String(d.getUTCDate()), x + dw/2, top + 42);
+      if(d.getUTCMonth() !== lastM){ lastM = d.getUTCMonth(); g.textAlign = "left"; g.font = F(12,800); g.fillText(`${GP_MONTHS[lastM]} ${d.getUTCFullYear()}`, x + 3, top + 18); }
+    }
+    const pos = {}; tasks.forEach((t,i) => pos[t.id] = i);
+    tasks.forEach((t,i) => { const y = top + hh + i*rh, [s,e] = this.span(t), par = this.isPar(t);
+      g.strokeStyle = "#e5e5e5"; g.beginPath(); g.moveTo(0, y+rh); g.lineTo(W, y+rh); g.stroke();
+      g.direction = "rtl"; g.textAlign = "right"; g.fillStyle = "#222"; g.font = F(13, par ? 800 : 400);
+      g.fillText((t.ms ? "◆ " : "") + t.name, W - 10 - this.depth(t)*18, y + 20);
+      g.textAlign = "center"; g.font = F(12); g.fillText(gpFmt(s), cw + 140, y + 20); g.fillText(gpFmt(e), cw + 50, y + 20);
+      const x = (s-a)*dw, w = (e-s+1)*dw - 2;
+      if(par){ g.fillStyle = "#6f97c4"; g.fillRect(x, y+11, w, 6); }
+      else if(t.ms){ g.save(); g.translate(x + dw/2, y + 15); g.rotate(Math.PI/4); g.fillStyle = "#5aa7d4"; g.fillRect(-6,-6,12,12); g.restore(); }
+      else { g.fillStyle = t.color || "#8fb0d3"; g.fillRect(x+1, y+7, w, 16); g.strokeStyle = "#5c80aa"; g.strokeRect(x+1, y+7, w, 16);
+        if(t.prog){ g.fillStyle = "#1d1d1d"; g.fillRect(x+1, y+13, w*t.prog/100, 5); } }
+    });
+    g.strokeStyle = "#222"; g.lineWidth = 1.3;
+    tasks.forEach(t => t.deps.forEach(d => { const pr = this.byId(d.id); if(!pr || pos[pr.id] == null) return;
+      const [,pe] = this.span(pr), [s] = this.span(t), x1 = (pe-a+1)*dw, y1 = top + hh + pos[pr.id]*rh + 15, x2 = (s-a)*dw, y2 = top + hh + pos[t.id]*rh + 15;
+      g.beginPath(); g.moveTo(x1,y1); g.lineTo(x1+6,y1); g.lineTo(x1+6,y2); g.lineTo(x2,y2); g.stroke(); }));
+    g.strokeStyle = "#999"; g.beginPath(); g.moveTo(cw, top); g.lineTo(cw, H-30); g.stroke();
+    return c.toDataURL("image/png");
+  }
+
+  /* ---------- المهام التعليمية والجولة والتنبيهات ---------- */
+  emit(ev){
+    const m = this.missions.find(x => x.ev === ev); if(!m || this.done.has(ev)) return;
+    this.done.add(ev); this.drawMissions(); this.toast("✅ أنجزتِ: " + m.text.split("(")[0]); Sound.success();
+    if(this.done.size === this.missions.length){ setTimeout(() => { FX.confetti(800,400,110); FX.message("أحسنتِ! 👏 أنجزتِ كل المهام"); Sound.applause(); }, 500); }
+  }
+  drawMissions(){
+    if(!this.missions.length) return;
+    const n = this.done.size, N = this.missions.length, mc = this.$(".gp-mc"); if(mc) mc.textContent = `${toAr(n)}/${toAr(N)}`;
+    this.$(".gp-mbtn").classList.toggle("pulse", !this.misOpen && n < N);
+    let box = $(".gp-mis", this.layer);
+    if(!this.misOpen){ if(box) box.remove(); return; }
+    if(!box){ box = document.createElement("div"); box.className = "gp-mis"; this.layer.appendChild(box); }
+    box.innerHTML = `<h4>🎯 مهامي في جانت بروجكت <span style="color:#888;font-size:15px">${toAr(n)} / ${toAr(N)}</span><button data-a="missions" title="إخفاء">✕</button></h4>
+      <ol>${this.missions.map((m,i) => `<li class="${this.done.has(m.ev)?"ok":""}"><span class="ck">✓</span><span>${toAr(i+1)}. ${m.text}</span></li>`).join("")}</ol>
+      <div class="bar"><i style="width:${n/N*100}%"></i></div>`;
+  }
+  toast(msg){ $$(".gp-toast", this.layer).forEach(x => x.remove()); const t = document.createElement("div"); t.className = "gp-toast"; t.textContent = msg; this.layer.appendChild(t); setTimeout(() => t.remove(), 2700); }
+  placeTour(){
+    $$(".gp-tb-badge,.gp-tip", this.layer).forEach(x => x.remove());
+    this.$("[data-a=tour]").classList.toggle("pulse", this.tourOn);
+    if(!this.tourOn) return;
+    const R = this.root.getBoundingClientRect(); if(!R.width) return;
+    $$("[data-tour]", this.root).forEach((el,i) => {
+      const r = el.getBoundingClientRect(); if(!r.width) return;
+      const b = document.createElement("div"); b.className = "gp-tb-badge"; b.textContent = toAr(i+1);
+      const L = Math.max(r.left, R.left), Rt = Math.min(r.right, R.right), tp = el.dataset.tp;
+      let x = (Rt - R.left)/SCALE - 20, y = Math.max(2, (r.top - R.top)/SCALE - 12);
+      if(tp === "c"){ x = ((L + Rt)/2 - R.left)/SCALE - 16; y = ((r.top + Math.min(r.bottom, R.bottom))/2 - R.top)/SCALE - 16; }
+      if(tp === "l"){ x = (L - R.left)/SCALE + 60; }
+      x = Math.min(x, R.width/SCALE - 40);
+      b.style.left = x + "px"; b.style.top = y + "px"; b.style.animationDelay = (i*60) + "ms";
+      b.onclick = ev => { ev.stopPropagation(); const was = b.classList.contains("on"); this.closeFloat(); if(was) return;
+        b.classList.add("on"); Sound.pop();
+        const tip = document.createElement("div"); tip.className = "gp-tip"; tip.innerHTML = `<b style="color:#1f7ae0">${toAr(i+1)}</b> — ${el.dataset.tour}`;
+        this.layer.appendChild(tip);
+        const W = this.root.offsetWidth, H = this.root.offsetHeight;
+        tip.style.left = Math.max(6, Math.min(x - 300, W - tip.offsetWidth - 6)) + "px";
+        tip.style.top = Math.min(y + 40, H - tip.offsetHeight - 6) + "px"; };
+      this.layer.appendChild(b);
+    });
+  }
+
+  /* ---------- لوحة المفاتيح ---------- */
+  key(e){
+    const t = e.target, typing = t && /INPUT|TEXTAREA|SELECT/.test(t.tagName);
+    if(this.dlg){
+      if(e.key === "Escape"){ e.preventDefault(); this.closeDlg(); return true; }
+      if(e.key === "Enter" && !(t && (t.tagName === "TEXTAREA" || t.dataset.enter))){ e.preventDefault(); $(".ok", this.dlg).click(); return true; }
+      return true;
+    }
+    if(e.key === "Escape" && ($(".gp-cm", this.layer) || $(".gp-tip", this.layer))){ this.closeFloat(); return true; }
+    if(typing) return false;
+    const c = e.ctrlKey || e.metaKey;
+    if(c){ const map = {KeyT:"newTask", KeyZ:"undo", KeyY:"redo", KeyC:"copy", KeyX:"cut", KeyV:"paste", KeyS:"save", KeyO:"open", KeyF:"find", KeyP:"print"};
+      const a = map[e.code]; if(a){ e.preventDefault(); this.act(a); return true; } return false; }
+    if(e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); this.act("delete"); return true; }
+    if(e.key === "Insert"){ e.preventDefault(); this.act("newTask"); return true; }
+    if(e.altKey && e.key === "Enter"){ e.preventDefault(); this.act("props"); return true; }
+    return false;
+  }
+}
+
+
+/* ==========================================================================
+   🧭 نظام التنقل بين الشرائح
+   ========================================================================== */
+const holder = $("#slides");
+const slidesEls = SLIDES.map((d, i) => {
+  const s = document.createElement("section");
+  s.className = "slide" + (d.type === "gantt" ? " gslide" : ""); s.dataset.anim = d.anim || "fade"; s.dataset.dir = "next";
+  const T = TYPES[d.type];
+  s.innerHTML = T ? T.html(d) : `<h2>نوع غير معروف: ${d.type}</h2>`;
+  holder.appendChild(s);
+  if(T && T.init) T.init(s, d);
+  return s;
+});
+const N = slidesEls.length;
+let cur = -1;
+
+function go(i){
+  if(i < 0 || i >= N || i === cur) return;
+  const dir = i > cur ? "next" : "prev";
+  if(cur >= 0){
+    const old = slidesEls[cur];
+    old.classList.remove("active"); old.classList.add("leaving");
+    setTimeout(()=>old.classList.remove("leaving"), 460);
+  }
+  const s = slidesEls[i];
+  s.dataset.dir = dir;
+  s.classList.remove("leaving");
+  void s.offsetWidth;                 // إعادة تشغيل الحركات
+  s.classList.add("active");
+  cur = i;
+  $("#count").textContent = `${toAr(cur+1)} / ${toAr(N)}`;
+  $("#progress").style.width = ((cur+1)/N*100) + "%";
+  try{ history.replaceState(null, "", "#" + (cur+1)); }catch(e){}
+}
+const next = () => go(cur + 1);
+const prev = () => go(cur - 1);
+
+/* أزرار الشريط */
+$("#nextBtn").onclick = next;
+$("#prevBtn").onclick = prev;
+$("#clapBtn").onclick = clap;
+$("#fsBtn").onclick = toggleFS;
+function toggleFS(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(()=>{});
+  else document.exitFullscreen?.();
+}
+
+/* لوحة المفاتيح */
+document.addEventListener("keydown", e => {
+  const tgt = e.target;
+  if(window.KEYHOOK && window.KEYHOOK(e)){ showBar(); return; }   // اختصارات محاكي جانت
+  if(tgt && (tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA" || tgt.tagName === "SELECT")){
+    if(e.key === "Escape") tgt.blur();
+    return;                                 // لا نتدخل أثناء الكتابة
+  }
+  Sound.init();
+  switch(true){
+    case e.key === "ArrowRight" || e.key === " " || e.code === "Space" || e.key === "PageDown":
+      e.preventDefault(); next(); break;
+    case e.key === "ArrowLeft" || e.key === "PageUp":
+      e.preventDefault(); prev(); break;
+    case e.key === "Home": e.preventDefault(); go(0); break;
+    case e.key === "End":  e.preventDefault(); go(N-1); break;
+    case e.key === "ت" || e.code === "KeyJ":      // حرف ت (نفس زر J في لوحة المفاتيح)
+      e.preventDefault(); clap(); break;
+    case e.key === "f" || e.key === "F" || e.key === "ب":
+      e.preventDefault(); toggleFS(); break;
+    case e.key === "ArrowUp" || e.key === "ArrowDown":
+      e.preventDefault(); break;
+  }
+  showBar();
+});
+
+/* إلغاء التركيز عن الأزرار بعد الضغط حتى لا يضغطها Space مرة أخرى */
+document.addEventListener("click", e => { Sound.init(); const b = e.target.closest("button"); if(b) b.blur(); });
+/* منع أي تمرير بعجلة الفأرة أو اللمس */
+window.addEventListener("wheel", e => { if(!e.target.closest(".scrollable")) e.preventDefault(); }, {passive:false});
+document.addEventListener("touchmove", e => { if(!e.target.closest("input,.scrollable")) e.preventDefault(); }, {passive:false});
+
+/* إخفاء شريط التحكم تلقائيًا عند عدم تحريك الماوس */
+let idleT;
+function showBar(){
+  document.body.classList.remove("idle");
+  clearTimeout(idleT);
+  idleT = setTimeout(()=>{ if(!$("#bar").matches(":hover")) document.body.classList.add("idle"); }, 1800);
+}
+["mousemove","pointerdown","touchstart"].forEach(ev => document.addEventListener(ev, showBar, {passive:true}));
+
+/* ملاءمة المسرح (16:9) لحجم الشاشة دون تمرير */
+function fit(){
+  SCALE = Math.min(window.innerWidth/1600, window.innerHeight/900);
+  $("#stage").style.transform = `translate(-50%,-50%) scale(${SCALE})`;
+}
+window.addEventListener("resize", fit);
+/* إعادة أي إزاحة داخلية للصفر (مثلاً عند التركيز على حقل كتابة) */
+document.addEventListener("scroll", e => { const t = e.target; if(t && t.nodeType === 1 && (t.id === "stage" || t.id === "slides" || t.classList.contains("slide"))){ t.scrollTop = 0; t.scrollLeft = 0; } }, true);
+
+/* التشغيل */
+FX.el = $("#fx");
+fit();
+const start = parseInt((location.hash||"").slice(1)) || 1;
+go(Math.min(Math.max(start,1),N) - 1);
+showBar();
+</script>
+</body>
+</html>

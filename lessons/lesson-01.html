@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أساسيات تخطيط المشروع | عرض تفاعلي</title>
+<!-- خط عربي واضح (إن لم يتوفر الإنترنت سيُستخدم خط النظام تلقائيًا) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   1) الألوان والهوية البصرية — غيّري الألوان من هنا
+   ========================================================= */
+:root{
+  --p:#6C3FD1;      /* البنفسجي الأساسي */
+  --p2:#8B5CF6;     /* بنفسجي فاتح */
+  --pd:#46238F;     /* بنفسجي غامق */
+  --pl:#EFE8FF;     /* خلفية بنفسجية ناعمة */
+  --pl2:#F8F5FF;
+  --ac:#14B8A6;     /* اللون المساعد (فيروزي) */
+  --acd:#0E8C7F;
+  --am:#F59E0B;     /* لمسة ذهبية */
+  --pink:#EC4899;
+  --ok:#10B981;
+  --bad:#F43F5E;
+  --ink:#2A1B4D;    /* لون النص */
+  --mut:#6B5E8A;
+  --line:#E6DDFF;
+}
+
+/* =========================================================
+   2) أساسيات الصفحة — منع التمرير وتثبيت نسبة 16:9
+   ========================================================= */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#E7E0F8;font-family:'Cairo',Tahoma,'Segoe UI',sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none}
+input{user-select:text;-webkit-user-select:text}
+button{font-family:inherit;cursor:pointer}
+b{color:var(--p);font-weight:900}
+
+/* المسرح: 1600×900 ويتم تكبيره/تصغيره بالجافاسكربت ليملأ الشاشة */
+#stage{
+  position:absolute;left:50%;top:50%;width:1600px;height:900px;
+  transform-origin:center center;overflow:hidden;overflow:clip;
+  background:linear-gradient(140deg,#FDFBFF 0%,#F4EEFF 60%,#EEF9F7 100%);
+}
+/* زخارف خلفية ناعمة */
+#stage::before,#stage::after{content:"";position:absolute;border-radius:50%;pointer-events:none;z-index:0}
+#stage::before{width:620px;height:620px;left:-220px;top:-260px;background:radial-gradient(circle,rgba(139,92,246,.16),transparent 70%)}
+#stage::after{width:560px;height:560px;right:-200px;bottom:-240px;background:radial-gradient(circle,rgba(20,184,166,.14),transparent 70%)}
+
+/* =========================================================
+   3) الشرائح وحركات الانتقال
+   ========================================================= */
+.slide{position:absolute;inset:0;overflow:hidden;overflow:clip;padding:48px 88px 70px;display:flex;flex-direction:column;opacity:0;visibility:hidden;z-index:1}
+.slide.active{opacity:1;visibility:visible;z-index:2}
+.slide.active[data-anim="fade"]{animation:inFade .7s ease both}
+.slide.active[data-anim="zoom"]{animation:inZoom .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.active[data-anim="slide"][data-dir="next"]{animation:inNext .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.active[data-anim="slide"][data-dir="prev"]{animation:inPrev .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.leaving{visibility:visible;opacity:1;animation:out .45s ease forwards;z-index:1}
+@keyframes inFade{from{opacity:0}to{opacity:1}}
+@keyframes inZoom{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:none}}
+@keyframes inNext{from{opacity:0;transform:translateX(-90px)}to{opacity:1;transform:none}}
+@keyframes inPrev{from{opacity:0;transform:translateX(90px)}to{opacity:1;transform:none}}
+@keyframes out{to{opacity:0;transform:scale(.97)}}
+
+/* ظهور العناصر بالتتابع */
+.slide.active .rv{animation:rise .6s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0) * 90ms + 180ms)}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+@keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(18deg)}75%{transform:rotate(-12deg)}}
+.shake{animation:shake .45s ease !important}
+.float{display:inline-block;animation:floaty 3.2s ease-in-out infinite}
+
+/* =========================================================
+   4) عناصر مشتركة
+   ========================================================= */
+.shead{display:flex;align-items:center;gap:22px;margin-bottom:26px;flex-wrap:wrap}
+.tag{background:#fff;color:var(--p);font-weight:800;font-size:23px;padding:7px 22px;border-radius:999px;border:2px solid var(--line);box-shadow:0 4px 14px rgba(108,63,209,.08);white-space:nowrap}
+.stitle{font-size:54px;font-weight:900;margin:0;line-height:1.3;color:var(--ink)}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;gap:22px}
+.lead{font-size:30px;line-height:1.7;margin:0;color:var(--ink)}
+.muted{color:var(--mut)}
+.center{text-align:center}
+.row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.row.c{justify-content:center}
+
+.card{background:#fff;border-radius:28px;border:2px solid #EEE7FF;box-shadow:0 14px 36px rgba(76,40,160,.09)}
+
+.btn{font-size:25px;font-weight:800;border:none;border-radius:18px;padding:12px 30px;background:var(--p);color:#fff;
+  box-shadow:0 7px 0 var(--pd);transition:transform .15s, box-shadow .15s, filter .2s}
+.btn:hover{transform:translateY(-3px);filter:brightness(1.08)}
+.btn:active{transform:translateY(5px);box-shadow:0 2px 0 var(--pd)}
+.btn.ghost{background:#fff;color:var(--p);border:2px solid var(--line);box-shadow:0 6px 0 #DCCFFF}
+.btn.teal{background:var(--ac);box-shadow:0 7px 0 var(--acd)}
+.btn.sm{font-size:21px;padding:8px 20px;border-radius:14px}
+
+.hidden-step{opacity:0;transform:translateY(20px) scale(.97);transition:all .5s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.hidden-step.show{opacity:1;transform:none;pointer-events:auto}
+
+.note{background:linear-gradient(90deg,#FFF7E6,#FFFBF2);border:2px dashed #F6C977;border-radius:20px;padding:14px 26px;font-size:26px;font-weight:700;color:#7A4C00}
+.chip{background:var(--pl);color:var(--pd);border-radius:999px;padding:8px 22px;font-size:24px;font-weight:800;border:2px solid var(--line)}
+
+.feedback{min-height:64px;font-size:32px;font-weight:900;text-align:center;display:flex;align-items:center;justify-content:center}
+.feedback .ok{color:var(--ok);animation:pop .5s both}
+.feedback .no{color:var(--p);animation:pop .5s both}
+
+/* =========================================================
+   5) شريط التحكم + المؤشرات (داخل المسرح فلا يغطي المحتوى)
+   ========================================================= */
+#progress{position:absolute;top:0;right:0;height:7px;background:linear-gradient(90deg,var(--ac),var(--p2),var(--p));z-index:40;transition:width .5s ease;border-radius:0 0 0 8px}
+#bar{position:absolute;bottom:10px;left:14px;display:flex;align-items:center;gap:4px;
+  background:rgba(42,27,77,.72);padding:4px 6px;border-radius:999px;z-index:40;
+  box-shadow:0 4px 12px rgba(42,27,77,.18);transition:opacity .35s, transform .35s}
+#bar button{border:none;background:transparent;color:#fff;font-size:15px;font-weight:800;height:30px;padding:0 10px;border-radius:999px;transition:background .2s}
+#bar button:hover{background:rgba(255,255,255,.2)}
+#bar button:active{transform:scale(.92)}
+#bar .clap{font-size:17px;padding:0 8px}
+#bar .count{color:#fff;font-size:14px;font-weight:800;min-width:54px;text-align:center}
+#bar .sep{width:1px;height:18px;background:rgba(255,255,255,.25)}
+#hint{position:absolute;bottom:14px;right:16px;z-index:40;font-size:13px;font-weight:700;color:var(--mut);background:rgba(255,255,255,.75);
+  border:1px solid var(--line);padding:3px 12px;border-radius:999px;transition:opacity .35s}
+body.idle #bar{opacity:0;transform:translateY(20px);pointer-events:none}
+body.idle #hint{opacity:0}
+body.idle{cursor:none}
+
+/* طبقة المؤثرات (تصفيق/احتفال) */
+#fx{position:absolute;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.clapfx{position:absolute;font-size:46px;animation:clapUp 1.8s ease-out forwards}
+@keyframes clapUp{0%{opacity:0;transform:translate(0,0) scale(.5)}15%{opacity:1;transform:translate(calc(var(--dx)*.2),-60px) scale(1.1)}100%{opacity:0;transform:translate(var(--dx),-520px) scale(.8) rotate(var(--r))}}
+.conf{position:absolute;width:14px;height:20px;border-radius:4px;animation:burst 1.3s cubic-bezier(.1,.7,.3,1) forwards}
+@keyframes burst{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r))}}
+.bigmsg{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:64px;font-weight:900;color:var(--p);background:#fff;
+  padding:24px 50px;border-radius:32px;box-shadow:0 20px 60px rgba(76,40,160,.25);animation:bigmsg 1.6s ease forwards;white-space:nowrap}
+@keyframes bigmsg{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%)}}
+
+/* =========================================================
+   6) تصميم أنواع الشرائح
+   ========================================================= */
+
+/* --- التحضير --- */
+.prep{display:flex;justify-content:center;flex:1;min-height:0;align-items:center}
+.prep-hero{text-align:center;padding:40px 90px;min-width:900px}
+.prep-hero .wave{font-size:120px;display:inline-block;animation:wave 2s ease-in-out infinite;transform-origin:70% 80%}
+.prep-hero h1{font-size:66px;font-weight:900;margin:10px 0 6px;color:var(--pd)}
+.prep-hero p{font-size:32px;margin:0 0 20px;color:var(--mut);font-weight:700}
+.date{display:inline-flex;flex-direction:column;gap:4px;background:var(--pl);border-radius:20px;padding:14px 36px;font-size:32px;font-weight:800;color:var(--pd)}
+.date small{font-size:26px;color:var(--mut);font-weight:700}
+.prep-side h3{font-size:32px;margin:0 0 18px}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.check{display:flex;align-items:center;gap:16px;background:#fff;border:3px solid var(--line);border-radius:24px;padding:20px 22px;font-size:28px;font-weight:800;color:var(--ink);transition:all .25s;text-align:right}
+.check:hover{transform:translateY(-4px);border-color:var(--p2)}
+.check .ci{font-size:46px}
+.check .box{margin-inline-start:auto;width:44px;height:44px;border-radius:14px;border:3px solid var(--line);display:grid;place-items:center;color:transparent;font-size:28px;transition:all .25s}
+.check.on{border-color:var(--ok);background:#ECFDF5}
+.check.on .box{background:var(--ok);border-color:var(--ok);color:#fff;animation:pop .4s}
+.ready-msg{margin-top:20px;font-size:32px;font-weight:900;color:var(--ok);text-align:center}
+.rules{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* --- بطاقات القلب --- */
+.flips{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;flex:1;min-height:0;max-height:420px}
+.flip{perspective:1400px;background:none;border:none;padding:0;height:100%}
+.flip-in{position:relative;width:100%;height:100%;transition:transform .8s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.face.front{background:linear-gradient(160deg,#fff,var(--pl));border:3px solid var(--line);box-shadow:0 14px 34px rgba(76,40,160,.1)}
+.face.front .ic{font-size:92px}
+.face.front .ft{font-size:40px;font-weight:900;color:var(--pd);margin-top:10px}
+.face.front .tap{font-size:20px;color:var(--mut);margin-top:10px;font-weight:700}
+.face.back{transform:rotateY(180deg);background:linear-gradient(160deg,var(--p),var(--pd));color:#fff}
+.face.back .bt{font-size:30px;font-weight:800;line-height:1.6}
+.face.back .ex{font-size:22px;margin-top:16px;background:rgba(255,255,255,.16);padding:8px 16px;border-radius:14px;font-weight:700}
+.bridge{font-size:36px;font-weight:800;text-align:center;padding:22px;background:linear-gradient(90deg,#ECFDF5,#F0EBFF);border-radius:24px;border:2px solid #CFF3EC}
+
+/* --- ماذا تتوقعين --- */
+.predict{display:grid;grid-template-columns:1fr 1fr;gap:40px;flex:1;min-height:0}
+.scene{padding:36px 40px;display:flex;flex-direction:column;justify-content:center;gap:20px;background:linear-gradient(160deg,#fff,#FFF6EC)}
+.scene .big{font-size:100px;text-align:center}
+.scene p{font-size:32px;line-height:1.8;margin:0;font-weight:600}
+.pred-list{display:flex;flex-direction:column;gap:16px}
+.pred-q{font-size:40px;font-weight:900;color:var(--pd);margin:0 0 6px}
+.pred-item{display:flex;align-items:center;gap:18px;background:#fff;border:2px solid var(--line);border-radius:22px;padding:14px 22px;font-size:30px;font-weight:800}
+.pred-item span{font-size:42px}
+
+/* --- العنوان --- */
+.titleS{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
+.titleS .kicker{font-size:30px;font-weight:800;color:var(--mut)}
+.titleS .badge{background:var(--p);color:#fff;font-size:32px;font-weight:900;padding:8px 36px;border-radius:999px;margin:18px 0 8px;box-shadow:0 8px 0 var(--pd)}
+.titleS h1{font-size:108px;font-weight:900;margin:8px 0;background:linear-gradient(90deg,var(--pd),var(--p2),var(--ac));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.35}
+.titleS .sub{font-size:38px;font-weight:700;color:var(--ink)}
+.orbit{position:absolute;font-size:64px;opacity:.9}
+.titleS .tnote{margin-top:26px}
+
+/* --- القائمة (الأهداف) --- */
+.olist{display:grid;grid-template-columns:1fr 1fr;gap:20px 32px}
+.oitem{display:flex;align-items:center;gap:20px;padding:20px 26px;font-size:31px;font-weight:800}
+.oitem .n{flex:none;width:58px;height:58px;border-radius:18px;background:var(--pl);display:grid;place-items:center;font-size:34px}
+
+/* --- المعادلة --- */
+.eq{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:10px}
+.eq-op{font-size:70px;font-weight:900;color:var(--p2)}
+.eq-box{width:250px;height:230px;border-radius:30px;border:3px dashed var(--p2);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:all .3s;position:relative}
+.eq-box:hover{transform:translateY(-6px)}
+.eq-box .q{font-size:100px;font-weight:900;color:var(--p2)}
+.eq-box .a{display:none;flex-direction:column;align-items:center;gap:8px}
+.eq-box .a i{font-style:normal;font-size:74px}
+.eq-box .a span{font-size:28px;font-weight:900;color:var(--pd)}
+.eq-box.on{border-style:solid;border-color:var(--p);background:linear-gradient(160deg,#fff,var(--pl))}
+.eq-box.on .q{display:none}
+.eq-box.on .a{display:flex;animation:pop .5s}
+.eq-box.res{border-color:var(--ac)}
+.eq-box.res.on{border-color:var(--ac);background:linear-gradient(160deg,#fff,#E6FBF8)}
+.defbox{padding:22px 34px;font-size:32px;line-height:1.7;font-weight:600;border-right:10px solid var(--p)}
+
+/* --- التصنيف --- */
+.sort-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.sitem{padding:16px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;transition:all .3s;position:relative}
+.sitem .si{font-size:52px;line-height:1}
+.sitem .st{font-size:27px;font-weight:800;min-height:44px;display:flex;align-items:center}
+.sitem .sb{display:flex;gap:10px}
+.sitem .sb button{border:2px solid var(--line);background:#fff;border-radius:14px;padding:6px 16px;font-size:22px;font-weight:800;color:var(--ink);transition:all .2s}
+.sitem .sb button:hover{background:var(--pl);border-color:var(--p2)}
+.sitem .sb button.x{background:#FFE4E8;border-color:var(--bad)}
+.sitem .done{display:none;font-size:25px;font-weight:900;padding:6px 20px;border-radius:999px;color:#fff}
+.sitem.ok .sb{display:none}
+.sitem.ok .done{display:block;animation:pop .45s}
+.sitem.ok.ca{border-color:var(--p);background:#F7F3FF}.sitem.ok.ca .done{background:var(--p)}
+.sitem.ok.cb{border-color:var(--ac);background:#EEFBF9}.sitem.ok.cb .done{background:var(--ac)}
+.score{font-size:26px;font-weight:900;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 22px;color:var(--pd)}
+
+/* --- البطاقات القابلة للنقر --- */
+.cgrid{display:grid;gap:20px;flex:1;min-height:0}
+.ccard{padding:18px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;transition:all .3s;border:2px solid #EEE7FF}
+.ccard:hover{transform:translateY(-5px);border-color:var(--p2)}
+.ccard .ci{font-size:58px;line-height:1.1;transition:transform .3s}
+.ccard .ct{font-size:29px;font-weight:900;color:var(--pd)}
+.ccard .cx{font-size:23px;font-weight:700;line-height:1.6;color:var(--ink);opacity:0;transform:translateY(10px);transition:all .4s}
+.ccard .tap{font-size:18px;color:var(--mut);font-weight:700;transition:opacity .3s}
+.ccard.open{background:linear-gradient(160deg,#fff,var(--pl));border-color:var(--p)}
+.ccard.open .cx{opacity:1;transform:none}
+.ccard.open .tap{opacity:0;height:0}
+.chips{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* --- المثلث --- */
+.tri{display:grid;grid-template-columns:640px 1fr;gap:40px;flex:1;min-height:0;align-items:center}
+.tri-wrap{position:relative;width:620px;height:500px}
+.tri-wrap svg{position:absolute;inset:0}
+.tnode{position:absolute;width:170px;height:110px;border-radius:26px;border:3px solid var(--p);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:var(--pd);transition:all .25s;transform:translate(-50%,-50%);box-shadow:0 10px 26px rgba(76,40,160,.12)}
+.tnode i{font-style:normal;font-size:42px}
+.tnode:hover,.tnode.on{background:var(--p);color:#fff;transform:translate(-50%,-50%) scale(1.07)}
+.tcenter{position:absolute;left:50%;top:62%;transform:translate(-50%,-50%);background:#E6FBF8;color:var(--acd);border-radius:999px;padding:10px 26px;font-size:26px;font-weight:900;border:2px solid #BDEFE8}
+.tinfo{padding:26px 32px;min-height:170px;font-size:29px;line-height:1.7;font-weight:600}
+.tinfo h3{margin:0 0 6px;font-size:34px;color:var(--p)}
+.lab{padding:20px 28px;margin-top:20px}
+.lab h4{margin:0 0 10px;font-size:27px}
+.lab input[type=range]{width:100%;accent-color:var(--p);height:34px}
+.barrow{display:grid;grid-template-columns:130px 1fr 150px;align-items:center;gap:14px;font-size:24px;font-weight:800;margin-top:8px}
+.bartrack{height:26px;background:var(--pl);border-radius:999px;overflow:hidden}
+.barfill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+
+/* --- فكر زاوج شارك --- */
+.tps-q{padding:26px 34px;font-size:40px;font-weight:900;text-align:center;background:linear-gradient(135deg,#fff,var(--pl))}
+.tps-row{display:grid;grid-template-columns:repeat(3,1fr) 300px;gap:20px;align-items:stretch}
+.phase{padding:18px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:28px;font-weight:900;border:3px solid #EEE7FF;transition:all .3s}
+.phase i{font-style:normal;font-size:56px}
+.phase small{font-size:21px;color:var(--mut);font-weight:700}
+.phase.on{border-color:var(--ac);background:#EEFBF9;transform:translateY(-6px)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.cmp .col{padding:18px 26px}
+.cmp h4{margin:0 0 6px;font-size:30px;color:var(--p)}
+.cmp ul{margin:0;padding-inline-start:28px;font-size:25px;font-weight:700;line-height:1.7}
+
+/* --- المؤقت --- */
+.timer{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px}
+.tm-num{font-size:62px;font-weight:900;color:var(--pd);font-variant-numeric:tabular-nums;line-height:1}
+.timer.done .tm-num{color:var(--bad);animation:shake .5s 2}
+.timer .ringbox{position:relative;width:300px;height:300px}
+.timer .ringbox svg{transform:rotate(-90deg)}
+.timer .ringbox .tm-num{position:absolute;inset:0;display:grid;place-items:center;font-size:90px}
+.timer circle.bg{stroke:var(--pl)}
+.timer circle.fg{stroke:var(--p);transition:stroke-dashoffset 1s linear, stroke .3s}
+.timer.warn circle.fg{stroke:var(--bad)}
+
+/* --- الترتيب --- */
+.slots{display:flex;align-items:stretch;justify-content:center;gap:8px}
+.slot{width:250px;min-height:200px;border-radius:24px;border:3px dashed var(--line);background:rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px 12px;text-align:center;gap:6px}
+.slot .sn{width:48px;height:48px;border-radius:50%;background:var(--pl);display:grid;place-items:center;font-size:26px;font-weight:900;color:var(--p)}
+.slot.fill{border-style:solid;border-color:var(--p);background:#fff;animation:pop .45s}
+.slot.fill .sn{background:var(--p);color:#fff}
+.slot .sl{font-size:28px;font-weight:900;color:var(--pd)}
+.slot .sd{font-size:20px;font-weight:700;color:var(--mut);line-height:1.5}
+.arrow{align-self:center;font-size:40px;color:var(--p2);font-weight:900}
+.pool{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.pool button{font-size:28px;font-weight:900;padding:14px 26px;border-radius:20px;border:3px solid var(--line);background:#fff;color:var(--ink);box-shadow:0 6px 0 #DCCFFF;transition:all .2s}
+.pool button:hover{transform:translateY(-4px);border-color:var(--p2)}
+.pool button.used{visibility:hidden}
+
+/* --- اختيار من متعدد --- */
+.mcq-q{padding:26px 36px;font-size:40px;font-weight:900;text-align:center;line-height:1.6;display:flex;align-items:center;justify-content:center;gap:24px}
+.mcq-q .qi{font-size:76px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.opt{display:flex;align-items:center;gap:20px;padding:18px 26px;font-size:31px;font-weight:800;background:#fff;border:3px solid var(--line);border-radius:26px;color:var(--ink);text-align:right;transition:all .2s;box-shadow:0 6px 0 #E6DDFF}
+.opt:hover{transform:translateY(-4px);border-color:var(--p2)}
+.opt .oi{flex:none;width:62px;height:62px;border-radius:18px;background:var(--pl);display:grid;place-items:center;font-size:36px;font-weight:900;color:var(--p)}
+.opt.right{background:#ECFDF5;border-color:var(--ok);box-shadow:0 6px 0 #A7F3D0}
+.opt.right .oi{background:var(--ok);color:#fff}
+.opt.wrong{background:#FFF1F4;border-color:#FDA4AF;opacity:.75}
+.explain{font-size:27px;font-weight:700;text-align:center;color:var(--acd)}
+
+/* --- صح وخطأ --- */
+.tf-list{display:flex;flex-direction:column;gap:14px}
+.tf{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:14px 24px;transition:all .3s}
+.tf .tt{font-size:28px;font-weight:800}
+.tf .fix{display:block;font-size:22px;color:var(--acd);font-weight:700;margin-top:4px}
+.tf .tb{display:flex;gap:12px}
+.tf .tb button{width:120px;height:58px;border-radius:16px;border:3px solid var(--line);background:#fff;font-size:25px;font-weight:900;transition:all .2s}
+.tf .tb button:hover{transform:translateY(-3px)}
+.tf .tb .t{color:var(--ok)} .tf .tb .f{color:var(--bad)}
+.tf.ok{border-color:var(--ok);background:#F2FDF8}
+.tf .tb button.sel{background:var(--ok);color:#fff;border-color:var(--ok)}
+.tf .tb button.x{background:#FFE4E8;border-color:var(--bad)}
+
+/* --- العصف الذهني --- */
+.storm{position:relative;flex:1;min-height:0}
+.storm-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:420px;padding:26px;border-radius:40px;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;text-align:center;font-size:32px;font-weight:900;line-height:1.5;box-shadow:0 18px 40px rgba(76,40,160,.3);z-index:2}
+.idea{position:absolute;transform:translate(-50%,-50%);background:#fff;border:3px solid var(--line);border-radius:26px;padding:10px 22px;font-size:25px;font-weight:800;max-width:390px;text-align:center;animation:ideaIn .5s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 8px 20px rgba(76,40,160,.1);width:max-content;line-height:1.5}
+.idea.book{border-color:var(--ac);background:#EEFBF9}
+@keyframes ideaIn{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}}
+.storm-in{display:flex;gap:14px;align-items:center}
+.storm-in input{flex:1;font-family:inherit;font-size:26px;font-weight:700;padding:12px 22px;border-radius:18px;border:3px solid var(--line);outline:none;color:var(--ink)}
+.storm-in input:focus{border-color:var(--p2)}
+
+/* --- المجموعات --- */
+.groups{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.grp{padding:20px 18px;text-align:center;border-top:10px solid var(--c)}
+.grp i{font-style:normal;font-size:54px;display:block}
+.grp h4{margin:6px 0;font-size:29px;color:var(--c)}
+.grp p{margin:0;font-size:24px;font-weight:700;line-height:1.6}
+.gfoot{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:center}
+
+/* --- بطاقة المشروع (تطبيق عملي) --- */
+.builder{display:grid;grid-template-columns:1fr 1fr;gap:34px;flex:1;min-height:0}
+.fields{display:flex;flex-direction:column;gap:12px}
+.field{display:grid;grid-template-columns:230px 1fr;align-items:center;gap:14px;font-size:25px;font-weight:800}
+.field input{font-family:inherit;font-size:24px;font-weight:700;padding:10px 18px;border-radius:16px;border:3px solid var(--line);outline:none;color:var(--ink);width:100%}
+.field input:focus{border-color:var(--p2)}
+.pcard{align-self:start;padding:24px 30px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(160deg,#fff,var(--pl));border:3px solid var(--p2)}
+.pcard h3{margin:0;font-size:38px;color:var(--pd);text-align:center}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pstat{background:#fff;border-radius:20px;padding:12px;text-align:center;border:2px solid var(--line)}
+.pstat i{font-style:normal;font-size:38px;display:block}
+.pstat b{display:block;font-size:22px;color:var(--mut)}
+.pstat span{font-size:23px;font-weight:800;word-break:break-word}
+.pcard .stk{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:44px}
+.pcard .stk .chip{font-size:21px;padding:5px 16px}
+.pcard.approved{border-color:var(--ok);box-shadow:0 0 0 8px rgba(16,185,129,.15)}
+.stamp{display:none;text-align:center;font-size:30px;font-weight:900;color:var(--ok)}
+.pcard.approved .stamp{display:block;animation:pop .5s}
+
+/* --- تحدي الدقيقة --- */
+.chal{display:grid;grid-template-columns:380px 1fr;gap:40px;flex:1;min-height:0;align-items:center}
+.chal-task{font-size:34px;font-weight:800;line-height:1.7;padding:24px 32px}
+.counter{display:flex;align-items:center;gap:18px;justify-content:center;font-size:26px;font-weight:800}
+.counter .cn{font-size:60px;font-weight:900;color:var(--p);min-width:90px;text-align:center}
+.ans-grid{display:flex;flex-wrap:wrap;gap:12px}
+.ans-grid .chip{font-size:25px}
+
+/* --- المراجعة (خريطة ذهنية) --- */
+.mind{display:grid;grid-template-columns:1fr 360px 1fr;gap:26px;flex:1;min-height:0;align-items:center}
+.mcol{display:flex;flex-direction:column;gap:16px}
+.mcore{width:320px;height:320px;border-radius:50%;margin:auto;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;display:grid;place-items:center;text-align:center;font-size:38px;font-weight:900;padding:40px;line-height:1.5;box-shadow:0 0 0 18px rgba(139,92,246,.15),0 20px 50px rgba(76,40,160,.3)}
+.branch{padding:14px 22px;text-align:right;border:3px solid #EEE7FF;transition:all .3s;display:block;width:100%;background:#fff;border-radius:24px;font-family:inherit;color:var(--ink)}
+.branch:hover{border-color:var(--p2)}
+.branch .bh{font-size:29px;font-weight:900;color:var(--pd);display:flex;align-items:center;gap:12px}
+.branch .bp{font-size:22px;font-weight:700;color:var(--mut);max-height:0;overflow:hidden;opacity:0;transition:all .4s;line-height:1.6}
+.branch.open{border-color:var(--p);background:#FAF7FF}
+.branch.open .bp{max-height:120px;opacity:1;margin-top:4px}
+
+/* --- التقييم الفوري --- */
+.exit{display:grid;grid-template-columns:1.2fr 1fr;gap:34px;flex:1;min-height:0}
+.votes{display:flex;flex-direction:column;gap:18px;padding:24px 30px;justify-content:center}
+.vote{display:grid;grid-template-columns:90px 230px 1fr 60px;align-items:center;gap:14px;background:none;border:none;padding:6px;border-radius:20px;text-align:right;color:var(--ink)}
+.vote:hover{background:var(--pl2)}
+.vote .ve{font-size:70px;transition:transform .2s}
+.vote:active .ve{transform:scale(1.3)}
+.vote .vl{font-size:27px;font-weight:800}
+.vote .vc{font-size:32px;font-weight:900;color:var(--p)}
+.ticket{padding:26px 32px;background:linear-gradient(160deg,#fff,#FFF6EC);border:3px dashed #F6C977}
+.ticket h3{margin:0 0 14px;font-size:34px;color:#B45309}
+.ticket div{font-size:28px;font-weight:700;padding:12px 0;border-bottom:2px dashed #F3DDB3}
+.ticket div:last-child{border:none}
+.ticket div b{font-size:38px;color:#D97706}
+
+/* --- الختام --- */
+.closing{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px}
+.closing .trophy{font-size:150px;animation:floaty 3s ease-in-out infinite}
+.closing h1{font-size:90px;margin:0;font-weight:900;color:var(--pd)}
+.closing p{font-size:36px;font-weight:700;margin:0;max-width:1150px;line-height:1.7}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="progress"></div>
+  <div id="hint">Space = التالي &nbsp;|&nbsp; ← → للتنقل &nbsp;|&nbsp; ت = تصفيق &nbsp;|&nbsp; F = ملء الشاشة</div>
+  <div id="slides"></div>
+  <div id="fx"></div>
+  <!-- شريط التحكم -->
+  <div id="bar">
+    <button id="nextBtn" title="التالي (→ أو Space)">→</button>
+    <span class="count" id="count">١ / ١</span>
+    <button id="prevBtn" title="السابق (←)">←</button>
+    <span class="sep"></span>
+    <button class="clap" id="clapBtn" title="تصفيق (ت)">👏</button>
+    <button id="fsBtn" title="ملء الشاشة (F)">⛶</button>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   ✏️✏️✏️  إعدادات المحتوى — عدّلي الدرس من هنا فقط  ✏️✏️✏️
+   --------------------------------------------------------------------------
+   • LESSON: بيانات الدرس العامة.
+   • SLIDES: قائمة الشرائح بالترتيب. لإضافة شريحة انسخي أي كائن { ... } والصقيه.
+     لحذف شريحة احذفي الكائن كاملًا. عدد الشرائح يُحسب تلقائيًا.
+   • type: نوع الشريحة (prep, flip, predict, title, list, equation, sort, cards,
+     triangle, tps, order, mcq, tf, brainstorm, challenge, groups, builder,
+     review, exit, closing)
+   • anim: حركة الدخول: "fade" أو "slide" أو "zoom"
+   • يمكن استخدام <b>كلمة</b> لتمييز كلمة باللون البنفسجي.
+   ========================================================================== */
+
+const LESSON = {
+  subject : "تقنية رقمية ٣",
+  unit    : "الوحدة الأولى",
+  number  : "الدرس الأول",
+  title   : "أساسيات تخطيط المشروع"
+};
+
+const SLIDES = [
+
+  /* ───────────── ١) التحضير ───────────── */
+  { type:"prep", anim:"zoom", tag:"🌸 التحضير",
+    greeting:"صباح الإنجاز يا مبدعات!",
+    sub:"نبدأ حصّتنا بنشاط وتركيز 💜",
+    rules:["👂 أُنصت باهتمام","✋ أرفع يدي للمشاركة","🤝 أحترم آراء زميلاتي","⏱️ ألتزم بالوقت"] },
+
+  /* ───────────── ٢) مراجعة التعلم السابق والربط ───────────── */
+  { type:"flip", anim:"slide", tag:"🔁 مراجعة وربط",
+    title:"تذكّري معي… ماذا تعرفين عن هذه الكلمات؟",
+    note:"اسألي الطالبات أولًا ثم اقلبي البطاقة 👆",
+    cards:[
+      {icon:"🎯", front:"الهدف",          back:"ما نريد الوصول إليه في النهاية",   ex:"مثال: الفوز في مسابقة الروبوت"},
+      {icon:"📋", front:"المهمة",         back:"عمل محدد نُنجزه خطوة بخطوة",       ex:"مثال: تصميم شعار الفريق"},
+      {icon:"⏰", front:"الموعد النهائي", back:"آخر وقت لتسليم العمل",             ex:"مثال: التسليم يوم الخميس"},
+      {icon:"💰", front:"الميزانية",       back:"المبلغ المتاح لإنجاز العمل",       ex:"مثال: ٥٠٠ ريال للفعالية"} ],
+    bridgeBtn:"🔗 اربطي بدرس اليوم",
+    bridge:"هدف 🎯 + مهام 📋 + موعد ⏰ + ميزانية 💰 = <b>مشروع!</b> 🚀 وهذا ما سنتعلّم تخطيطه اليوم" },
+
+  /* ───────────── ٣) التهيئة ───────────── */
+  { type:"predict", anim:"fade", tag:"🔮 التهيئة • ماذا تتوقعين؟",
+    title:"موقف سريع…",
+    icon:"🎉",
+    scenario:"كُلِّفتِ مع صديقاتك بتنظيم <b>فعالية يوم المعلم</b> في المدرسة خلال <b>أسبوع واحد</b> وبميزانية <b>٥٠٠ ريال</b>… لكنّكنّ بدأتنّ العمل <b>بدون أي خطة!</b>",
+    question:"ماذا تتوقعين أن يحدث؟ 🤔",
+    answers:[ {icon:"⏳",text:"ضياع الوقت وتأخّر الفعالية"},
+              {icon:"💸",text:"نفاد الميزانية قبل اكتمال التجهيز"},
+              {icon:"😵",text:"تكرار المهام وتداخلها بين الفريق"},
+              {icon:"📉",text:"ضعف الأداء وعدم تحقيق الهدف"} ],
+    revealBtn:"🔮 اكشفي توقّعًا",
+    conclusion:"💡 الحل هو <b>التخطيط!</b> فعدم وجود خطة يؤدي إلى ضياع الوقت وضعف الأداء" },
+
+  /* ───────────── ٤) العنوان ───────────── */
+  { type:"title", anim:"zoom",
+    sub:"من الفكرة… إلى خطة ناجحة 🚀",
+    icons:["📋","🗓️","💰","👩‍💼","🎯","📈"],
+    note:"📝 سجّلي عنوان الدرس في دفترك" },
+
+  /* ───────────── ٥) الأهداف ───────────── */
+  { type:"list", anim:"slide", tag:"🎯 أهداف الدرس",
+    title:"في نهاية الدرس ستكونين قادرة على:",
+    items:[ {icon:"💡",text:"تعريف المشروع وإدارة المشروع"},
+            {icon:"🔺",text:"توضيح عناصر مثلث إدارة المشروع"},
+            {icon:"🧾",text:"التمييز بين التكاليف الثابتة والمتغيرة"},
+            {icon:"🔄",text:"ترتيب مراحل دورة حياة خطة المشروع"},
+            {icon:"🗂️",text:"التعرّف على الخطط الأخرى للمشروع"},
+            {icon:"👩‍💼",text:"تحديد واجبات مدير المشروع وسماته"} ] },
+
+  /* ───────────── ٦) لاحظ واكتشف: ما المشروع؟ ───────────── */
+  { type:"equation", anim:"slide", tag:"🔎 لاحظ واكتشف",
+    title:"ما هو المشروع؟",
+    hint:"اضغطي على كل صندوق لتكتشفي مكوّنات المشروع",
+    parts:[ {icon:"📋",label:"أنشطة ومهام"}, {icon:"⏰",label:"إطار زمني محدد"}, {icon:"💰",label:"ميزانية محددة"} ],
+    result:{icon:"🎁",label:"منتج أو خدمة"},
+    defBtn:"📖 أظهري التعريف",
+    definition:"<b>المشروع:</b> سلسلة من الأنشطة أو المهام الواجب إنجازها خلال إطار زمني محدد وضمن ميزانية محددة للتوصّل إلى منتج أو خدمة." },
+
+  /* ───────────── ٧) صنّفي: مشروع أم مهمة روتينية ───────────── */
+  { type:"sort", anim:"fade", tag:"🧩 صنّفي",
+    title:"مشروع أم مهمة روتينية؟",
+    question:"اختاري التصنيف المناسب لكل بطاقة 👇",
+    cats:[ {id:"a",label:"مشروع",icon:"🚀"}, {id:"b",label:"مهمة روتينية",icon:"🔁"} ],
+    items:[ {icon:"🎉",text:"تنظيم فعالية يوم المعلم",cat:"a"},
+            {icon:"🪥",text:"تنظيف أسناني كل يوم",cat:"b"},
+            {icon:"📱",text:"تصميم تطبيق لمكتبة المدرسة",cat:"a"},
+            {icon:"🛏️",text:"ترتيب سريري كل صباح",cat:"b"},
+            {icon:"🤖",text:"المشاركة في مسابقة الروبوت",cat:"a"},
+            {icon:"🚌",text:"الذهاب إلى المدرسة",cat:"b"} ],
+    doneMsg:"💡 المشروع له بداية ونهاية، وهدف، وزمن، وميزانية محددة" },
+
+  /* ───────────── ٨) إدارة المشروع ───────────── */
+  { type:"cards", anim:"slide", tag:"📚 إدارة المشروع",
+    title:"إدارة المشروع",
+    intro:"عملية تمرّ بمراحل لتحقيق أهداف محددة في زمن محدد:",
+    chips:["🚀 البدء","📝 التخطيط","⚙️ التنفيذ","🎛️ التحكم","🏁 الإغلاق"],
+    sub:"✨ فوائدها — اضغطي على البطاقة:",
+    cols:5,
+    cards:[ {icon:"⏱️",title:"توفير الوقت",text:"والجهد بالتركيز على الأولويات"},
+            {icon:"🧗‍♀️",title:"تجاوز الصعوبات",text:"والتقليل من احتمالات الفشل"},
+            {icon:"👀",title:"المتابعة",text:"تحقيق درجة عالية من المتابعة"},
+            {icon:"🔄",title:"التكيّف",text:"مع المتغيرات"},
+            {icon:"💳",title:"الميزانية",text:"إدارة ميزانية المشروع بفاعلية"} ] },
+
+  /* ───────────── ٩) مثلث إدارة المشروع ───────────── */
+  { type:"triangle", anim:"zoom", tag:"🔎 لاحظ واكتشف",
+    title:"مثلث إدارة المشروع",
+    nodes:{
+      scope:{icon:"🎯",label:"النطاق", text:"كل الأعمال والأنشطة التي يتم تنفيذها للوصول إلى المنتج أو الخدمة المطلوبة."},
+      time :{icon:"⏰",label:"الزمن",  text:"الجدول الزمني للمشروع: ندوّن جميع المهام من البداية للنهاية، ونحدد زمن كل مهمة وأولويتها."},
+      cost :{icon:"💰",label:"التكلفة",text:"ميزانية المشروع: الموارد البشرية، الأدوات والأجهزة، المواد الخام… وغيرها."} },
+    center:"⭐ جودة المشروع",
+    startText:"👈 اضغطي على أي ركن من أركان المثلث لتتعرّفي عليه",
+    labTitle:"🧪 جرّبي: حرّكي المؤشر لزيادة نطاق المشروع… ماذا تلاحظين؟",
+    labNote:"💡 كلما زاد <b>النطاق</b> زاد <b>الزمن</b> أو <b>التكلفة</b> أو كلاهما!" },
+
+  /* ───────────── ١٠) صنّفي: تكاليف ثابتة / متغيرة ───────────── */
+  { type:"sort", anim:"fade", tag:"🧾 صنّفي",
+    title:"تكاليف ثابتة أم متغيرة؟",
+    question:"تنقسم تكاليف المشروع إلى قسمين… صنّفي كل بند:",
+    cats:[ {id:"a",label:"ثابتة",icon:"🧱"}, {id:"b",label:"متغيرة",icon:"📊"} ],
+    items:[ {icon:"👷‍♀️",text:"رواتب العمال",cat:"a"},
+            {icon:"🏢",text:"الإيجارات",cat:"a"},
+            {icon:"💡",text:"الكهرباء",cat:"b"},
+            {icon:"🚰",text:"المياه",cat:"b"},
+            {icon:"🧵",text:"المواد المستخدمة في الإنتاج",cat:"b"} ],
+    doneMsg:"💡 الثابتة: الرواتب والإيجارات • المتغيرة: الكهرباء والمياه والمواد" },
+
+  /* ───────────── ١١) عناصر تخطيط المشروع ───────────── */
+  { type:"cards", anim:"slide", tag:"🗺️ تخطيط المشروع",
+    title:"عناصر تخطيط المشروع",
+    intro:"<b>خطة المشروع</b> وثيقة رسمية لمراقبة وتنفيذ المشروع، وهي <b>مفتاح النجاح</b> 🔑",
+    cols:3,
+    cards:[ {icon:"🎯",title:"تحديد النطاق",text:"الأهداف والنتائج المرجوّة وأصحاب المصلحة"},
+            {icon:"🗓️",title:"تطوير الخطة",text:"المهام والموارد والجداول الزمنية"},
+            {icon:"⚠️",title:"تحديد المخاطر",text:"ووضع استراتيجيات للتغلب عليها"},
+            {icon:"👥",title:"الأدوار والمسؤوليات",text:"تحديد أعضاء الفريق وأدوارهم"},
+            {icon:"🚩",title:"معالم المشروع",text:"نقاط لقياس التقدّم وتقييمه"},
+            {icon:"📈",title:"المراقبة والتحكم",text:"تتبّع سير المشروع وتصحيح المشكلات"} ] },
+
+  /* ───────────── تخطيط المشروع وفوائده (ص ١٠–١١) ───────────── */
+  { type:"cards", anim:"slide", tag:"🗺️ تخطيط المشروع",
+    title:"لماذا نخطّط للمشروع؟",
+    intro:"<b>تخطيط المشروع:</b> كيفية إتمام مشروع في إطار زمني محدد، بمراحل محددة وموارد معينة؛ يحوّل الفكرة غير الملموسة إلى واقع. فوائده:",
+    cols:5,
+    cards:[ {icon:"📈",title:"تحسين النتائج",text:"أهداف واضحة وخطة مفصلة ومراقبة للتقدم ← في الوقت والميزانية وبرضا أصحاب المصلحة"},
+            {icon:"💰",title:"انخفاض التكاليف",text:"تحديد متطلبات الموارد وتخصيصها بكفاءة يقلل التأخير وإعادة العمل"},
+            {icon:"⚡",title:"زيادة الكفاءة",text:"تحديد الأدوار والمسؤوليات والإجراءات والمجالات القابلة للتحسين"},
+            {icon:"🤝",title:"مشاركة أصحاب المصلحة",text:"إشراكهم في التخطيط يوافق توقعاتهم مع النتائج ويزيد رضاهم"},
+            {icon:"🛡️",title:"إدارة المخاطر",text:"تحديد المخاطر المحتملة واستراتيجيات الحد منها يقلل احتمالية الفشل"} ] },
+
+  /* ───────────── ١٢) فكّري – زاوجي – شاركي ───────────── */
+  { type:"tps", anim:"fade", tag:"👭 فكّري – زاوجي – شاركي",
+    title:"سؤال للنقاش",
+    question:"ما الفرق بين <b>تخطيط المشروع</b> و<b>إدارة المشروع</b>؟",
+    phases:[ {icon:"🤔",label:"فكّري بمفردك",sec:60},
+             {icon:"👭",label:"زاوجي زميلتك",sec:90},
+             {icon:"📢",label:"شاركي الصف",sec:120} ],
+    answerBtn:"💡 الإجابة النموذجية",
+    answer:[ {title:"🗺️ تخطيط المشروع", points:["مرحلة من مراحل إدارة المشروع","يحدد: ماذا؟ كيف؟ متى؟ وبكم؟","يحوّل الفكرة إلى خطة واضحة"]},
+             {title:"🧭 إدارة المشروع", points:["العملية الشاملة للمشروع كله","بدء ← تخطيط ← تنفيذ ← تحكم ← إغلاق","تضمن تحقيق الأهداف في الوقت والميزانية"]} ] },
+
+  /* ───────────── ١٣) رتّبي: دورة حياة خطة المشروع ───────────── */
+  { type:"order", anim:"slide", tag:"🔄 رتّبي",
+    title:"دورة حياة خطة المشروع",
+    question:"اضغطي على المراحل بالترتيب الصحيح من ١ إلى ٥",
+    steps:[ {icon:"🚀",label:"البدء",desc:"تحديد الأهداف والنطاق مع أصحاب المصلحة"},
+            {icon:"📝",label:"التخطيط",desc:"خطة مفصّلة للمهام والموارد والزمن"},
+            {icon:"⚙️",label:"التنفيذ",desc:"تنفيذ المهام ومراقبة التقدّم"},
+            {icon:"🎛️",label:"المراقبة والتحكم",desc:"مقارنة الأداء بالخطة وتصحيح الأخطاء"},
+            {icon:"🏁",label:"الإنهاء",desc:"تسليم المشروع للعميل أو صاحب المصلحة"} ] },
+
+  /* ───────────── ١٤) الخطط الأخرى ───────────── */
+  { type:"cards", anim:"zoom", tag:"🗂️ خطط أخرى",
+    title:"خطط تتفرّع من خطة المشروع",
+    intro:"توقّعي وظيفة كل خطة من اسمها… ثم اضغطي للتأكد 🤔",
+    cols:3,
+    cards:[ {icon:"🧰",title:"خطة الموارد",text:"احتياجات المشروع من أدوات وأجهزة وبرامج وبشر وطرق توفيرها"},
+            {icon:"💵",title:"الخطة المالية",text:"حساب التكلفة، ووضع الميزانية، والتحكم في النفقات"},
+            {icon:"✅",title:"خطة القبول",text:"معايير تجعل المنتج مقبولًا لدى العملاء وأصحاب المصلحة"},
+            {icon:"📣",title:"خطة التواصل",text:"إبقاء أصحاب المصلحة على اطّلاع دائم بمجريات المشروع"},
+            {icon:"🛒",title:"خطة المشتريات",text:"شراء المنتجات والخدمات واختيار الموردين بعناية"},
+            {icon:"🛡️",title:"خطة المخاطر",text:"السيطرة على المشكلات المحتملة والحدّ من تأثيرها"} ] },
+
+  /* ───────────── تفاصيل الخطط (ص ١٣) ───────────── */
+  { type:"cards", anim:"slide", tag:"🗂️ خطط أخرى بالتفصيل",
+    title:"ماذا تضم كل خطة؟",
+    intro:"اضغطي على الخطة لتكتشفي مكوّناتها 👇",
+    cols:3,
+    cards:[ {icon:"🧰",title:"خطة الموارد",text:"١ احتياجات المشروع من الموارد • ٢ الكميات والأعداد • ٣ طرق توفيرها وإعادة توفيرها • ٤ متابعة الاستهلاك والاستخدام الرشيد — وقد تُفصل الموارد البشرية في خطة خاصة"},
+            {icon:"💵",title:"الخطة المالية",text:"١ حساب التكلفة التقديرية • ٢ وضع ميزانية المشروع • ٣ التحكم في النفقات (العملية الأكثر تحديًا)"},
+            {icon:"✅",title:"خطة القبول",text:"١ معايير قبول المشروع ومتسلماته • ٢ الأدوات والمقاييس لتحديد الجودة • ٣ استراتيجيات ضمان جودة المتسلمات"} ],
+    footer:"📣 خطة التواصل: إطلاع أصحاب المصلحة دائمًا • 🛒 المشتريات: اختيار الموردين بعناية • 🛡️ المخاطر: تحديد أولوياتها وإجراءات الحد منها" },
+
+  /* ───────────── ١٥) سؤال موقف ───────────── */
+  { type:"mcq", anim:"fade", tag:"❓ اختاري الإجابة الصحيحة",
+    title:"أيّ خطة كانت ستُنقذنا؟",
+    icon:"🤖🔋",
+    question:"في مسابقة الروبوت… <b>توقفت بطارية الروبوت</b> فجأة! أيّ خطة تحدد الإجراءات مسبقًا لمثل هذا الموقف؟",
+    options:[ {icon:"🛒",text:"خطة المشتريات"}, {icon:"🛡️",text:"خطة المخاطر"},
+              {icon:"📣",text:"خطة التواصل"},  {icon:"✅",text:"خطة القبول"} ],
+    correct:1,
+    explain:"🛡️ خطة المخاطر تحدد أولويات المخاطر والإجراءات التي تحدّ من تأثيرها" },
+
+  { type:"mcq", anim:"fade", tag:"❓ اختاري الإجابة الصحيحة",
+    title:"فكّري كمديرة مشروع 👩‍💼",
+    icon:"🛒⚙️",
+    question:"نريد شراء قطع الروبوت من <b>أفضل الموردين</b> وبأفضل الأسعار. أيّ خطة نحتاج؟",
+    options:[ {icon:"💵",text:"الخطة المالية"}, {icon:"✅",text:"خطة القبول"},
+              {icon:"🛒",text:"خطة المشتريات"}, {icon:"🛡️",text:"خطة المخاطر"} ],
+    correct:2,
+    explain:"🛒 خطة المشتريات تساعد على الشراء واختيار الموردين بعناية" },
+
+  /* ───────────── ١٦) العصف الذهني ───────────── */
+  { type:"brainstorm", anim:"zoom", tag:"🧠 عصف ذهني",
+    title:"لو أردنا بناء تطبيق رقمي لمدرستنا…",
+    center:"ما التكاليف التي يجب أن نحسبها؟ 💭",
+    placeholder:"اكتبي فكرة الطالبة هنا ثم اضغطي Enter",
+    seedBtn:"📘 أفكار من الكتاب",
+    seeds:["💻 تكلفة التطوير","☁️ الاستضافة السحابية","🔑 تراخيص الأدوات والبرمجيات","🛡️ اختبارات الأمن السيبراني","💾 حماية البيانات والنسخ الاحتياطي","🔐 الخصوصية وفق الأنظمة المعمول بها في المملكة","🧑‍🔧 الدعم الفني والصيانة"] },
+
+  /* ───────────── ميزات إدارة التكاليف (ص ١٤) ───────────── */
+  { type:"cards", anim:"slide", tag:"💰 إدارة التكاليف",
+    title:"ميزات إدارة التكاليف",
+    intro:"<b>إدارة التكاليف (Cost Management):</b> تقدير التكاليف والتخطيط لها والتحكم بها: إنشاء ميزانية، ومراقبة النفقات، وإجراء التعديلات لإكمال المشروع ضمن الميزانية.",
+    cols:5,
+    cards:[ {icon:"📊",title:"ميزانيات واقعية",text:"تساعد على وضع ميزانيات واقعية للمشروع"},
+            {icon:"👀",title:"تتبّع النفقات",text:"تسمح بتتبع ومراقبة النفقات بشكل أفضل"},
+            {icon:"✂️",title:"خفض التكاليف",text:"تمكّن من التحكم الفعّال في التكلفة وتدابير خفضها"},
+            {icon:"🔢",title:"ترتيب الأولويات",text:"تحدد أولويات الأنشطة بناءً على فعالية التكلفة"},
+            {icon:"🧭",title:"قرارات أفضل",text:"توفر بيانات تكلفة دقيقة لاتخاذ القرار"} ] },
+
+  { type:"sort", anim:"fade", tag:"⚖️ أهمية إدارة التكاليف",
+    title:"بإدارة التكاليف… أم بدونها؟",
+    question:"صنّفي كل نتيجة: هل تحدث <b>بوجود</b> إدارة التكاليف أم <b>بدونها</b>؟",
+    cats:[ {id:"a",label:"بها",icon:"✅"}, {id:"b",label:"بدونها",icon:"⚠️"} ],
+    items:[ {icon:"🎯",text:"التحكم في الميزانية وتنفيذ العمليات دون تجاوزات",cat:"a"},
+            {icon:"📉",text:"تجاوز الميزانية وخسائر مالية للشركة",cat:"b"},
+            {icon:"📑",text:"تقارير مالية دقيقة تساعد في اتخاذ القرار",cat:"a"},
+            {icon:"❌",text:"تقارير مالية غير دقيقة لأصحاب المصلحة",cat:"b"} ],
+    doneMsg:"💡 إدارة التكاليف وتعيين الموارد مكوّنان أساسيان لتخطيط المشروع" },
+
+  /* ───────────── ١٧) عناصر تقدير التكلفة ───────────── */
+  { type:"cards", anim:"slide", tag:"💰 إدارة التكاليف",
+    title:"عناصر تقدير تكلفة المشروع",
+    intro:"<b>تقدير التكلفة:</b> عملية التنبؤ بالموارد المالية والموارد الأخرى اللازمة لإكمال المشروع ضمن نطاقه. عناصره:",
+    cols:5,
+    cards:[ {icon:"👩‍💻",title:"الموارد البشرية",text:"أجور الفريق ومدة العمل"},
+            {icon:"🛠️",title:"المواد والمعدات",text:"الأدوات والبرمجيات والتصاريح"},
+            {icon:"🏢",title:"المنشآت",text:"إيجارات مساحات العمل"},
+            {icon:"🚚",title:"الموردون",text:"المتعاقدون والجهات الخارجية"},
+            {icon:"⚠️",title:"التحديات والمخاطر",text:"احتياطات لمشكلات قد تزيد التكلفة"} ],
+    footer:"⚡ تحديات تقدير التكلفة: الاستعجال • قلة الخبرة • الانحياز لتقليل التكلفة • ضغوط الإدارة" },
+
+  /* ───────────── تعيين الموارد (ص ١٦) ───────────── */
+  { type:"cards", anim:"slide", tag:"📦 تعيين الموارد",
+    title:"ميزات تعيين الموارد",
+    intro:"<b>تعيين الموارد (Resource Mapping):</b> تحديد وتنظيم جميع الموارد اللازمة لإكمال المشروع (البشرية والمعدات والمواد والمرافق) وكيفية تخصيصها وإدارتها.",
+    cols:5,
+    cards:[ {icon:"🎯",title:"الشخص المناسب",text:"تعيين ذوي المهارات المناسبة للمهام المناسبة"},
+            {icon:"⚖️",title:"لا إفراط ولا نقص",text:"تجنّب فرط استغلال الموارد أو استغلالها الناقص"},
+            {icon:"🗓️",title:"إدارة استباقية",text:"تسهيل الإدارة الاستباقية لتوافر الموارد وتخصيصها"},
+            {icon:"📈",title:"استخدام أفضل",text:"تحسين استخدام الموارد لتحقيق أهداف المشروع"},
+            {icon:"🚧",title:"كشف الاختناقات",text:"تحديد قيود الموارد المحتملة أو اختناقاتها مقدمًا"} ] },
+
+  /* ───────────── ١٨) صنّفي الموارد ───────────── */
+  { type:"sort", anim:"fade", tag:"📦 تعيين الموارد",
+    title:"موارد قابلة للتخزين أم غير قابلة؟",
+    question:"الملموس يُخزَّن… وغير الملموس لا يُخزَّن. صنّفي:",
+    cats:[ {id:"a",label:"قابلة للتخزين",icon:"📦"}, {id:"b",label:"غير قابلة",icon:"✨"} ],
+    items:[ {icon:"🔧",text:"الأدوات",cat:"a"},
+            {icon:"📜",text:"التراخيص",cat:"b"},
+            {icon:"⚙️",text:"الآلات والمعدات",cat:"a"},
+            {icon:"™️",text:"العلامة التجارية",cat:"b"},
+            {icon:"🖨️",text:"الأجهزة",cat:"a"},
+            {icon:"🌟",text:"سمعة الشركة",cat:"b"} ],
+    doneMsg:"💡 غير القابلة للتخزين يصعب تقدير قيمتها، لكنها تسهم في نجاح المشروع" },
+
+  /* ───────────── العمل الجماعي الناجح (ص ١٧) ───────────── */
+  { type:"cards", anim:"slide", tag:"🤝 فريق المشروع",
+    title:"نقاط لعمل جماعي ناجح",
+    intro:"فريق المشروع كيان ديناميكي يتمتع باستقلالية نسبية واتصال داخلي قوي، ويتطلب:",
+    cols:3,
+    cards:[ {icon:"🧩",title:"تنوّع وتكامل",text:"تنوع التخصصات والمواهب وتكاملها"},
+            {icon:"⚖️",title:"توازن المهام",text:"توزيع المهام على الأعضاء كلٌّ فيما يتميز به"},
+            {icon:"🗳️",title:"صناعة القرار",text:"مشاركة الأعضاء في صناعة القرارات بشكل فاعل"},
+            {icon:"📡",title:"قنوات اتصال",text:"اتصال فاعل بين المدير والأعضاء والأطراف المعنية"},
+            {icon:"💬",title:"بيئة حوار",text:"التعبير عن الرأي والنقد البنّاء وتوليد الأفكار"},
+            {icon:"🕊️",title:"حل الخلافات",text:"حل النزاعات بسرعة والحفاظ على وحدة الفريق"} ],
+    footer:"🔑 مفاتيح الإدارة الناجحة للموارد: <b>توفير الموارد</b> ← <b>جدولتها</b> ← <b>استخدامها الأمثل</b> • وتُحسب أولويات الموارد بطريقة <b>المسار الحرج</b>" },
+
+  /* ───────────── ١٩) مدير المشروع ───────────── */
+  { type:"cards", anim:"slide", tag:"👩‍💼 مدير المشروع",
+    title:"واجبات مدير المشروع",
+    intro:"<b>مدير المشروع</b> هو المسؤول الأول عن إكمال المشروع بنجاح ضمن الزمن والميزانية.",
+    cols:3,
+    cards:[ {icon:"🗺️",title:"وضع الخطة",text:"إعداد خطة المشروع"},
+            {icon:"🧑‍🤝‍🧑",title:"توظيف الفريق",text:"اختيار فريق عمل المشروع"},
+            {icon:"🧭",title:"القيادة",text:"قيادة فريق المشروع وإدارته"},
+            {icon:"🗓️",title:"الجدول الزمني",text:"وضع الجدول وتحديد كل مرحلة"},
+            {icon:"📌",title:"توزيع المهام",text:"تعيين المهام لأعضاء الفريق"},
+            {icon:"📊",title:"التقارير",text:"تقديم تقارير محدّثة للإدارة العليا"} ] },
+
+  /* ───────────── الفرق الفرعية ومعايير اختيار الفريق (ص ١٩) ───────────── */
+  { type:"cards", anim:"slide", tag:"👥 بناء الفريق",
+    title:"الفرق الفرعية ومعايير اختيار الفريق",
+    intro:"<b>التقسيم إلى فِرق فرعية:</b> تقسيم العمل إلى أجزاء أصغر وأبسط؛ كل فريق ينفّذ مهمة في فترة معينة، فتُنجز المهام غير المترابطة في الوقت نفسه. أهم معايير اختيار فريق العمل:",
+    cols:3,
+    cards:[ {icon:"🎓",title:"التخصص والخبرات",text:"أعضاء متخصصون في مجالات المشروع وأصحاب خبرات سابقة"},
+            {icon:"🧩",title:"مهارات الأعضاء",text:"مهارات متنوعة ومتكاملة تخدم طبيعة المشروع"},
+            {icon:"🔥",title:"السمات الشخصية",text:"الالتزام والحماس والرغبة في العمل"} ] },
+
+  /* ───────────── ٢٠) تحدي الدقيقة ───────────── */
+  { type:"challenge", anim:"zoom", tag:"⏱️ تحدي الدقيقة",
+    title:"صفات مديرة المشروع الفعّالة",
+    task:"خلال <b>دقيقة واحدة</b>… اذكرن أكبر عدد من الصفات التي يجب أن تتوفر في مديرة المشروع الناجحة! 🏃‍♀️",
+    seconds:60,
+    answersBtn:"🔍 صفات من الكتاب",
+    answers:["👑 تمتلك مهارات القيادة","⚖️ صانعة قرار جيد","🎓 تمتاز بالخبرة الفنية","🤝 تبني مهارات الفريق","💪 تعمل جيدًا تحت الضغوط","🗣️ تتفاوض بفعالية","💗 تراعي الجوانب الإنسانية"] },
+
+  /* ───────────── ٢١) التعلم التعاوني ───────────── */
+  { type:"groups", anim:"slide", tag:"🤝 التعلم التعاوني",
+    title:"مهمة الفرق: مسابقة الروبوت 🤖",
+    scenario:"مدرستكنّ تريد المشاركة في <b>مسابقة الروبوت</b>! كل مجموعة مسؤولة عن جزء من خطة المشروع:",
+    minutes:5,
+    groups:[ {icon:"👩‍💼",name:"فريق الإدارة",color:"#6C3FD1",task:"ما واجبات مديرة المشروع في هذه المسابقة؟"},
+             {icon:"🔄",name:"فريق المراحل",color:"#14B8A6",task:"اكتبن مراحل دورة حياة المشروع للمسابقة"},
+             {icon:"💰",name:"فريق التكلفة",color:"#F59E0B",task:"ما عناصر تكلفة المشاركة؟ وأيّها ثابت وأيّها متغير؟"},
+             {icon:"🛡️",name:"فريق المخاطر",color:"#EC4899",task:"ما المخاطر المحتملة؟ وكيف نتعامل معها؟"} ],
+    teamwork:["💡 يعزز الإبداع","🧩 يمزج نقاط القوة","🤝 يبني الثقة","🕊️ يعلّم حل النزاع","💜 يعزز الانتماء"] },
+
+  /* ───────────── ٢٢) تطبيق عملي ───────────── */
+  { type:"builder", anim:"zoom", tag:"🛠️ تطبيق عملي",
+    title:"صمّمي بطاقة المشروع",
+    scenario:"شركة تقدم خدمة <b>إعادة التدوير ♻️</b> تريد إنشاء منصة إلكترونية للتواصل مع العملاء ومتابعة طلباتهم ونشر الوعي البيئي. طبّقي مثلث إدارة المشروع:",
+    fields:[ {key:"name", icon:"🏷️",label:"اسم المشروع",       ph:"مثال: منصة دوّرها"},
+             {key:"scope",icon:"🎯",label:"النطاق (المهام)",   ph:"تصميم المنصة، التسجيل، الطلبات…"},
+             {key:"time", icon:"⏰",label:"الزمن المتوقع",     ph:"مثال: ٣ أشهر"},
+             {key:"cost", icon:"💰",label:"التكلفة التقديرية", ph:"مثال: ٥٠ ألف ريال"},
+             {key:"stake",icon:"👥",label:"أصحاب المصلحة",     ph:"الشركة، العملاء، الموظفون"} ],
+    approveBtn:"✅ اعتماد الخطة" },
+
+  /* ───────────── ٢٣-٢٥) أسئلة التقييم ───────────── */
+  { type:"mcq", anim:"fade", tag:"📝 التقييم",
+    title:"اختاري الإجابة الصحيحة",
+    icon:"💼",
+    question:"المشروع:",
+    options:[ {text:"لا يوجد به أي مخاطر"}, {text:"لديه نقطة بداية ونهاية واضحة"},
+              {text:"ليس له جدول زمني محدد"}, {text:"تكاليفه غير محددة"} ],
+    correct:1 },
+
+  { type:"mcq", anim:"fade", tag:"📝 التقييم",
+    title:"اختاري الإجابة الصحيحة",
+    icon:"🔺",
+    question:"تتشكّل عناصر مثلث إدارة المشروعات من:",
+    options:[ {text:"النطاق، والزمن، والتكلفة"}, {text:"النطاق، والقيمة، والقدرة"},
+              {text:"النطاق، والزمن، والإنجازات"}, {text:"النطاق، والكفاءة، والزمن"} ],
+    correct:0 },
+
+  { type:"mcq", anim:"fade", tag:"📝 التقييم",
+    title:"اختاري الإجابة الصحيحة",
+    icon:"👥",
+    question:"الأطراف المعنية (أصحاب المصلحة):",
+    options:[ {text:"تقدّم الملاحظات والتغذية الراجعة"}, {text:"ليس لهم أي مشاركة في المشروع"},
+              {text:"تنتهي مشاركتهم عند انتهائه فقط"}, {text:"مشاركتهم محدودة ويمكن الاستغناء عنهم"} ],
+    correct:0 },
+
+  { type:"mcq", anim:"fade", tag:"📝 التقييم",
+    title:"اختاري الإجابة الصحيحة",
+    icon:"📊",
+    question:"مصطلح التكاليف المتغيرة يعني تكاليف:",
+    options:[ {text:"رواتب العاملين"}, {text:"الإيجارات"}, {text:"المواد المستخدمة في الإنتاج"}, {text:"شخصية"} ],
+    correct:2 },
+
+  /* ───────────── ٢٦) صح أم خطأ ───────────── */
+  { type:"tf", anim:"slide", tag:"✔️✖️ صح أم خطأ",
+    title:"صح أم خطأ؟",
+    items:[ {text:"يمكن زيادة نطاق المشروع دون أن يؤثر ذلك على الزمن أو التكلفة.", answer:false, fix:"زيادة النطاق تزيد الزمن أو التكلفة أو كليهما"},
+            {text:"رواتب العمال والإيجارات من التكاليف الثابتة.", answer:true},
+            {text:"في مرحلة الإنهاء يتم تسليم المشروع للعميل أو صاحب المصلحة.", answer:true},
+            {text:"العلامة التجارية وسمعة الشركة موارد قابلة للتخزين.", answer:false, fix:"هي موارد غير قابلة للتخزين (غير ملموسة)"},
+            {text:"مدير المشروع هو المسؤول الأول عن إكمال المشروع بنجاح.", answer:true} ] },
+
+  /* ───────────── ٢٧) المراجعة ───────────── */
+  { type:"review", anim:"zoom", tag:"🧭 مراجعة",
+    title:"خريطة الدرس — اضغطي على كل فرع",
+    center:"أساسيات تخطيط المشروع",
+    branches:[ {icon:"💡",label:"المشروع",points:"مهام + زمن + ميزانية ← منتج أو خدمة"},
+               {icon:"🔺",label:"مثلث الإدارة",points:"النطاق • الزمن • التكلفة… وفي المركز الجودة"},
+               {icon:"🔄",label:"دورة الحياة",points:"البدء ← التخطيط ← التنفيذ ← المراقبة ← الإنهاء"},
+               {icon:"🗂️",label:"الخطط الأخرى",points:"الموارد • المالية • القبول • التواصل • المشتريات • المخاطر"},
+               {icon:"💰",label:"التكاليف والموارد",points:"ثابتة ومتغيرة • قابلة وغير قابلة للتخزين"},
+               {icon:"👩‍💼",label:"مدير المشروع",points:"يخطط ويقود ويتابع • قيادي وصانع قرار ومفاوض"} ] },
+
+  /* ───────────── ٢٨) التقييم الفوري ───────────── */
+  { type:"exit", anim:"fade", tag:"⚡ التقييم الفوري",
+    title:"كيف تقيّمين فهمك اليوم؟",
+    levels:[ {emoji:"🤩",label:"فهمت كل شيء"}, {emoji:"🙂",label:"فهمت أغلبه"}, {emoji:"🤔",label:"أحتاج توضيحًا"} ],
+    ticket:{ title:"🎟️ بطاقة الخروج ٣-٢-١",
+             items:["<b>٣</b> مفاهيم تعلّمتها اليوم","<b>٢</b> خطتان من الخطط الأخرى وفائدتهما","<b>١</b> سؤال ما زال في ذهني"] } },
+
+  /* ───────────── ٢٩) الختام ───────────── */
+  { type:"closing", anim:"zoom",
+    emoji:"🏆",
+    title:"أبدعتنّ اليوم! 🌟",
+    message:"كل إنجاز عظيم بدأ بخطة صغيرة… خطّطي لأحلامك كما تخطّطين لمشروعك 💜",
+    homework:"📚 الواجب: حلّ تدريب ١ وتدريب ٥ في الكتاب (مسابقة الروبوت)",
+    clapHint:"اضغطي 👏 أو حرف (ت) لنصفّق لأنفسنا!" }
+];
+
+/* ==========================================================================
+   🔧 من هنا يبدأ الكود البرمجي — لا حاجة لتعديله
+   ========================================================================== */
+
+/* ---------- أدوات مساعدة ---------- */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const toAr = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+const LETTERS = ["أ","ب","ج","د","هـ","و"];
+const shuffle = a => { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; };
+const head = d => `<div class="shead rv" style="--i:0">${d.tag?`<span class="tag">${d.tag}</span>`:""}${d.title?`<h2 class="stitle">${d.title}</h2>`:""}</div>`;
+let SCALE = 1;
+
+/* ==========================================================================
+   🔊 الأصوات — مولّدة بالكامل عبر Web Audio API (بدون ملفات خارجية)
+   ========================================================================== */
+const Sound = {
+  ctx:null, master:null, noise:null,
+  init(){
+    if(!this.ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain(); this.master.gain.value = .9;
+      this.master.connect(this.ctx.destination);
+      // ضوضاء بيضاء تُستخدم لصوت التصفيق
+      const len = this.ctx.sampleRate * 1;
+      this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d = this.noise.getChannelData(0);
+      for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    }
+    if(this.ctx.state === "suspended") this.ctx.resume();
+    return this.ctx;
+  },
+  // صفقة واحدة = ٢-٣ نبضات ضوضاء سريعة متتالية
+  clapHit(t, vol){
+    const c = this.ctx;
+    const pulses = 2 + Math.floor(Math.random()*2);
+    for(let p=0;p<pulses;p++){
+      const tt = t + p*0.009;
+      const src = c.createBufferSource(); src.buffer = this.noise;
+      const bp = c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value = 900 + Math.random()*1600; bp.Q.value = .9;
+      const hp = c.createBiquadFilter(); hp.type="highpass"; hp.frequency.value = 500;
+      const g = c.createGain();
+      const v = p===pulses-1 ? vol : vol*.6;
+      g.gain.setValueAtTime(0.0001, tt);
+      g.gain.exponentialRampToValueAtTime(v, tt+0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + (p===pulses-1 ? 0.13 : 0.03));
+      src.connect(bp).connect(hp).connect(g).connect(this.master);
+      src.start(tt, Math.random()*0.8); src.stop(tt+0.2);
+    }
+  },
+  // تصفيق جماعي قصير (≈ ١.٨ ثانية)
+  applause(){
+    if(!this.init()) return;
+    const now = this.ctx.currentTime + 0.02, dur = 1.8, n = 60;
+    for(let i=0;i<n;i++){
+      const r = Math.random();
+      const t = now + r*dur;
+      const fade = r < .75 ? 1 : (1 - (r-.75)/.25);   // يخفت في النهاية
+      this.clapHit(t, (0.25 + Math.random()*0.35) * fade);
+    }
+  },
+  tone(freq, t, dur, type="sine", vol=.25){
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t+dur+0.05);
+  },
+  success(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>{ this.tone(f,t+i*0.09,.45,"triangle",.22); this.tone(f*2,t+i*0.09,.3,"sine",.05); }); },
+  wrong(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    this.tone(392,t,.22,"sine",.18); this.tone(311,t+.16,.35,"sine",.16); },
+  pop(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    this.tone(660,t,.12,"sine",.15); this.tone(990,t+.05,.14,"sine",.1); },
+  tick(){ if(!this.init()) return; this.tone(1200,this.ctx.currentTime,.07,"square",.05); },
+  bell(){ if(!this.init()) return; const t=this.ctx.currentTime;
+    [0,.35,.7].forEach(d=>{ this.tone(880,t+d,1.1,"sine",.25); this.tone(1320,t+d,.8,"sine",.08); }); }
+};
+
+/* ==========================================================================
+   🎉 المؤثرات البصرية
+   ========================================================================== */
+const FX = {
+  el: null,
+  claps(){
+    for(let i=0;i<16;i++){
+      const s = document.createElement("span");
+      s.className = "clapfx"; s.textContent = "👏";
+      s.style.left = (600 + Math.random()*400) + "px";
+      s.style.top  = (720 + Math.random()*60) + "px";
+      s.style.setProperty("--dx", (Math.random()*500-250) + "px");
+      s.style.setProperty("--r", (Math.random()*60-30) + "deg");
+      s.style.animationDelay = (Math.random()*0.5) + "s";
+      s.style.fontSize = (34 + Math.random()*26) + "px";
+      this.el.appendChild(s); setTimeout(()=>s.remove(), 2500);
+    }
+  },
+  confetti(x=800, y=420, n=70){
+    const colors = ["#6C3FD1","#8B5CF6","#14B8A6","#F59E0B","#EC4899","#C4B5FD"];
+    for(let i=0;i<n;i++){
+      const p = document.createElement("i");
+      p.className = "conf";
+      p.style.left = x+"px"; p.style.top = y+"px";
+      p.style.background = colors[i%colors.length];
+      const a = Math.random()*Math.PI*2, d = 180 + Math.random()*320;
+      p.style.setProperty("--x", Math.cos(a)*d + "px");
+      p.style.setProperty("--y", (Math.sin(a)*d + 160) + "px");
+      p.style.setProperty("--r", (Math.random()*720-360) + "deg");
+      p.style.width = (8+Math.random()*10)+"px";
+      this.el.appendChild(p); setTimeout(()=>p.remove(), 1400);
+    }
+  },
+  // تحويل موقع عنصر في الشاشة إلى إحداثيات المسرح
+  at(el){
+    const s = $("#stage").getBoundingClientRect(), r = el.getBoundingClientRect();
+    return [(r.left + r.width/2 - s.left)/SCALE, (r.top + r.height/2 - s.top)/SCALE];
+  },
+  message(txt){
+    const m = document.createElement("div"); m.className="bigmsg"; m.innerHTML = txt;
+    this.el.appendChild(m); setTimeout(()=>m.remove(), 1700);
+  }
+};
+function celebrate(el){ const [x,y] = el ? FX.at(el) : [800,420]; FX.confetti(x,y); Sound.success(); }
+function clap(){ Sound.applause(); FX.claps(); const b=$("#clapBtn"); b.animate([{transform:"scale(1)"},{transform:"scale(1.3)"},{transform:"scale(1)"}],{duration:400}); }
+
+/* ==========================================================================
+   ⏱️ المؤقت (يُستخدم في التحديات والنقاش والمجموعات)
+   ========================================================================== */
+class Timer{
+  constructor(host, sec, ring=false){
+    this.host = host; this.total = sec; this.left = sec; this.ring = ring; this.iv = null;
+    const C = 2*Math.PI*130; this.C = C;
+    host.innerHTML = `
+      <div class="timer ${ring?"ring":""}">
+        ${ring ? `<div class="ringbox"><svg width="300" height="300"><circle class="bg" cx="150" cy="150" r="130" fill="none" stroke-width="22"/>
+          <circle class="fg" cx="150" cy="150" r="130" fill="none" stroke-width="22" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+          <div class="tm-num"></div></div>` : `<div class="tm-num"></div>`}
+        <div class="row c"><button class="btn sm tm-go">▶ ابدئي</button><button class="btn sm ghost tm-re">↺</button></div>
+      </div>`;
+    this.box = $(".timer", host);
+    $(".tm-go", host).onclick = () => this.iv ? this.pause() : this.start();
+    $(".tm-re", host).onclick = () => this.set(this.total);
+    this.draw();
+  }
+  set(sec){ this.pause(); this.total = this.left = sec; this.box.classList.remove("done","warn"); this.draw(); }
+  start(){ if(this.left<=0) this.set(this.total); this.box.classList.remove("done");
+    this.iv = setInterval(()=>this.tick(), 1000); $(".tm-go",this.host).textContent = "⏸ إيقاف"; }
+  pause(){ clearInterval(this.iv); this.iv = null; $(".tm-go",this.host).textContent = "▶ ابدئي"; }
+  tick(){
+    this.left--;
+    if(this.left <= 10) this.box.classList.add("warn");
+    if(this.left > 0 && this.left <= 5) Sound.tick();
+    if(this.left <= 0){ this.left = 0; this.pause(); this.box.classList.add("done"); Sound.bell(); }
+    this.draw();
+  }
+  draw(){
+    const m = Math.floor(this.left/60), s = this.left%60;
+    $(".tm-num", this.host).textContent = toAr(`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`);
+    if(this.ring) $("circle.fg", this.host).style.strokeDashoffset = this.C * (1 - this.left/this.total);
+  }
+}
+
+/* ==========================================================================
+   🧱 بناء الشرائح حسب النوع — كل نوع له دالة (html) ودالة تفاعل (init)
+   ========================================================================== */
+const TYPES = {
+
+  /* ---------- التحضير ---------- */
+  prep:{
+    html:d => `
+      <div class="prep">
+        <div class="prep-hero card rv" style="--i:1">
+          <div class="wave">👋</div>
+          <h1>${d.greeting}</h1>
+          <p>${d.sub}</p>
+          <div class="date">${LESSON.subject}<small>${LESSON.number}: ${LESSON.title}</small></div>
+        </div>
+      </div>
+      <div class="rules rv" style="--i:3">${d.rules.map(r=>`<span class="chip">${r}</span>`).join("")}</div>`
+  },
+
+  /* ---------- بطاقات القلب (مراجعة) ---------- */
+  flip:{
+    html:d => `${head(d)}
+      <div class="body">
+        <p class="lead muted rv" style="--i:1">${d.note||""}</p>
+        <div class="flips">${d.cards.map((c,i)=>`
+          <button class="flip rv" style="--i:${i+2}"><div class="flip-in">
+            <div class="face front"><div class="ic float" style="animation-delay:${i*.3}s">${c.icon}</div><div class="ft">${c.front}</div><div class="tap">اضغطي للقلب 🔄</div></div>
+            <div class="face back"><div class="bt">${c.back}</div>${c.ex?`<div class="ex">${c.ex}</div>`:""}</div>
+          </div></button>`).join("")}
+        </div>
+        <div class="row c rv" style="--i:7"><button class="btn teal bbtn">${d.bridgeBtn}</button></div>
+        <div class="bridge hidden-step">${d.bridge}</div>
+      </div>`,
+    init:(el) => {
+      $$(".flip",el).forEach(f => f.onclick = () => { f.classList.toggle("on"); Sound.pop(); });
+      $(".bbtn",el).onclick = e => { const b=$(".bridge",el); b.classList.add("show"); $$(".flip",el).forEach(f=>f.classList.add("on")); celebrate(b); };
+    }
+  },
+
+  /* ---------- ماذا تتوقعين؟ ---------- */
+  predict:{
+    html:d => `${head(d)}
+      <div class="predict">
+        <div class="scene card rv" style="--i:1"><div class="big float">${d.icon}</div><p>${d.scenario}</p></div>
+        <div class="pred-list">
+          <h3 class="pred-q rv" style="--i:2">${d.question}</h3>
+          ${d.answers.map(a=>`<div class="pred-item hidden-step"><span>${a.icon}</span>${a.text}</div>`).join("")}
+          <div class="row rv" style="--i:3"><button class="btn rbtn">${d.revealBtn}</button></div>
+          <div class="note hidden-step concl">${d.conclusion}</div>
+        </div>
+      </div>`,
+    init:(el) => {
+      const items = $$(".pred-item",el); let k = 0;
+      $(".rbtn",el).onclick = () => {
+        if(k < items.length){ items[k++].classList.add("show"); Sound.pop(); }
+        else { const c=$(".concl",el); if(!c.classList.contains("show")){ c.classList.add("show"); celebrate(c); } }
+        if(k === items.length) $(".rbtn",el).textContent = "💡 ما الحل؟";
+      };
+    }
+  },
+
+  /* ---------- العنوان ---------- */
+  title:{
+    html:d => {
+      const pos = [[140,120],[1320,140],[110,560],[1340,540],[380,40],[1080,660]];
+      return `<div class="titleS">
+        ${(d.icons||[]).map((ic,i)=>`<span class="orbit float" style="left:${pos[i%6][0]}px;top:${pos[i%6][1]}px;animation-delay:${i*.4}s">${ic}</span>`).join("")}
+        <div class="kicker rv" style="--i:0">${LESSON.subject} • ${LESSON.unit}</div>
+        <div class="badge rv" style="--i:1">${LESSON.number}</div>
+        <h1 class="rv" style="--i:2">${LESSON.title}</h1>
+        <div class="sub rv" style="--i:3">${d.sub}</div>
+        <div class="note tnote rv" style="--i:4">${d.note}</div>
+      </div>`;
+    }
+  },
+
+  /* ---------- قائمة (الأهداف) ---------- */
+  list:{
+    html:d => `${head(d)}
+      <div class="body" style="justify-content:center">
+        <div class="olist">${d.items.map((it,i)=>`
+          <div class="oitem card rv" style="--i:${i+1}"><span class="n">${it.icon}</span>${it.text}</div>`).join("")}
+        </div>
+      </div>`
+  },
+
+  /* ---------- المعادلة (لاحظ واكتشف) ---------- */
+  equation:{
+    html:d => `${head(d)}
+      <div class="body">
+        <p class="lead muted center rv" style="--i:1">👆 ${d.hint}</p>
+        <div class="eq rv" style="--i:2">
+          ${d.parts.map((p,i)=>`${i?'<span class="eq-op">+</span>':""}<button class="eq-box"><span class="q">؟</span><span class="a"><i>${p.icon}</i><span>${p.label}</span></span></button>`).join("")}
+          <span class="eq-op">=</span>
+          <button class="eq-box res"><span class="q">؟</span><span class="a"><i>${d.result.icon}</i><span>${d.result.label}</span></span></button>
+        </div>
+        <div class="row c rv" style="--i:3"><button class="btn dbtn">${d.defBtn}</button></div>
+        <div class="defbox card hidden-step">${d.definition}</div>
+      </div>`,
+    init:(el) => {
+      const boxes = $$(".eq-box",el);
+      boxes.forEach(b => b.onclick = () => {
+        if(b.classList.contains("on")) return;
+        b.classList.add("on"); Sound.pop();
+        if(boxes.every(x=>x.classList.contains("on"))) celebrate(b);
+      });
+      $(".dbtn",el).onclick = () => { boxes.forEach(b=>b.classList.add("on")); $(".defbox",el).classList.add("show"); Sound.pop(); };
+    }
+  },
+
+  /* ---------- التصنيف ---------- */
+  sort:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="row rv" style="--i:1" >
+          <p class="lead" style="flex:1">${d.question}</p>
+          <span class="score">✅ <span class="sc">٠</span> / ${toAr(d.items.length)}</span>
+        </div>
+        <div class="sort-grid">${d.items.map((it,i)=>`
+          <div class="sitem card rv" style="--i:${i+2}" data-cat="${it.cat}">
+            <div class="si">${it.icon}</div><div class="st">${it.text}</div>
+            <div class="sb">${d.cats.map(c=>`<button data-c="${c.id}">${c.icon} ${c.label}</button>`).join("")}</div>
+            <div class="done">${(d.cats.find(c=>c.id===it.cat)||{}).icon} ${(d.cats.find(c=>c.id===it.cat)||{}).label}</div>
+          </div>`).join("")}
+        </div>
+        <div class="note hidden-step dmsg center">${d.doneMsg||"🎉 أحسنتِ!"}</div>
+      </div>`,
+    init:(el,d) => {
+      let score = 0;
+      $$(".sitem",el).forEach(it => {
+        $$(".sb button",it).forEach(b => b.onclick = () => {
+          if(b.dataset.c === it.dataset.cat){
+            it.classList.add("ok", it.dataset.cat === d.cats[0].id ? "ca" : "cb");
+            score++; $(".sc",el).textContent = toAr(score); Sound.pop();
+            if(score === d.items.length){ $(".dmsg",el).classList.add("show"); celebrate($(".dmsg",el)); FX.message("أحسنتِ! 👏"); }
+          } else {
+            b.classList.add("x"); it.classList.remove("shake"); void it.offsetWidth; it.classList.add("shake"); Sound.wrong();
+            setTimeout(()=>b.classList.remove("x"), 700);
+          }
+        });
+      });
+    }
+  },
+
+  /* ---------- بطاقات قابلة للنقر ---------- */
+  cards:{
+    html:d => `${head(d)}
+      <div class="body">
+        ${d.intro?`<p class="lead rv" style="--i:1">${d.intro}</p>`:""}
+        ${d.chips?`<div class="chips rv" style="--i:2">${d.chips.map((c,i)=>`${i?'<span style="font-size:28px;color:var(--p2)">←</span>':""}<span class="chip">${c}</span>`).join("")}</div>`:""}
+        ${d.sub?`<p class="lead rv" style="--i:3;font-weight:800">${d.sub}</p>`:""}
+        <div class="cgrid" style="grid-template-columns:repeat(${d.cols||3},1fr)">
+          ${d.cards.map((c,i)=>`<button class="ccard card rv" style="--i:${i+3}"><div class="ci">${c.icon}</div><div class="ct">${c.title}</div><div class="cx">${c.text}</div><div class="tap">اضغطي 👆</div></button>`).join("")}
+        </div>
+        <div class="row" style="justify-content:space-between">
+          ${d.footer?`<div class="note rv" style="--i:9;flex:1">${d.footer}</div>`:"<span></span>"}
+          <button class="btn sm ghost allbtn rv" style="--i:9">👁️ إظهار الكل</button>
+        </div>
+      </div>`,
+    init:(el) => {
+      $$(".ccard",el).forEach(c => c.onclick = () => { c.classList.toggle("open"); Sound.pop(); });
+      $(".allbtn",el).onclick = () => { $$(".ccard",el).forEach(c=>c.classList.add("open")); Sound.pop(); };
+    }
+  },
+
+  /* ---------- مثلث إدارة المشروع ---------- */
+  triangle:{
+    html:d => `${head(d)}
+      <div class="tri">
+        <div class="tri-wrap rv" style="--i:1">
+          <svg viewBox="0 0 620 500"><defs><marker id="ah" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#8B5CF6"/></marker></defs>
+            <polygon points="310,70 535,420 85,420" fill="rgba(139,92,246,.06)" stroke="#8B5CF6" stroke-width="5" stroke-dasharray="14 10" stroke-linejoin="round"/></svg>
+          <button class="tnode" data-k="scope" style="left:310px;top:70px"><i>${d.nodes.scope.icon}</i>${d.nodes.scope.label}</button>
+          <button class="tnode" data-k="time"  style="left:535px;top:420px"><i>${d.nodes.time.icon}</i>${d.nodes.time.label}</button>
+          <button class="tnode" data-k="cost"  style="left:85px;top:420px"><i>${d.nodes.cost.icon}</i>${d.nodes.cost.label}</button>
+          <div class="tcenter">${d.center}</div>
+        </div>
+        <div>
+          <div class="tinfo card rv" style="--i:2"><p style="margin:0" class="muted">${d.startText}</p></div>
+          <div class="lab card rv" style="--i:3">
+            <h4>${d.labTitle}</h4>
+            <input type="range" min="1" max="5" value="1" class="rng">
+            <div class="barrow"><span>🎯 النطاق</span><div class="bartrack"><div class="barfill b1" style="background:var(--p)"></div></div><span class="v1"></span></div>
+            <div class="barrow"><span>⏰ الزمن</span><div class="bartrack"><div class="barfill b2" style="background:var(--ac)"></div></div><span class="v2"></span></div>
+            <div class="barrow"><span>💰 التكلفة</span><div class="bartrack"><div class="barfill b3" style="background:var(--am)"></div></div><span class="v3"></span></div>
+            <div class="note hidden-step lnote" style="margin-top:12px;font-size:24px">${d.labNote}</div>
+          </div>
+        </div>
+      </div>`,
+    init:(el,d) => {
+      $$(".tnode",el).forEach(n => n.onclick = () => {
+        $$(".tnode",el).forEach(x=>x.classList.remove("on")); n.classList.add("on");
+        const nd = d.nodes[n.dataset.k];
+        const box = $(".tinfo",el);
+        box.innerHTML = `<h3>${nd.icon} ${nd.label}</h3><div>${nd.text}</div>`;
+        box.animate([{opacity:0,transform:"translateY(12px)"},{opacity:1,transform:"none"}],{duration:400});
+        Sound.pop();
+      });
+      const labels = ["صغير","متوسط","كبير","كبير جدًا","ضخم"];
+      const rng = $(".rng",el);
+      const upd = () => {
+        const v = +rng.value;
+        $(".b1",el).style.width = v*20+"%";
+        $(".b2",el).style.width = (12+v*17.6)+"%";
+        $(".b3",el).style.width = (10+v*18)+"%";
+        $(".v1",el).textContent = labels[v-1];
+        $(".v2",el).textContent = toAr(v*2) + " أسابيع";
+        $(".v3",el).textContent = toAr(v*1000) + " ريال";
+        if(v>=3) $(".lnote",el).classList.add("show");
+      };
+      rng.oninput = upd; rng.onchange = () => rng.blur(); upd();
+    }
+  },
+
+  /* ---------- فكّري – زاوجي – شاركي ---------- */
+  tps:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="tps-q card rv" style="--i:1">${d.question}</div>
+        <div class="tps-row">
+          ${d.phases.map((p,i)=>`<button class="phase card rv" style="--i:${i+2}" data-s="${p.sec}"><i>${p.icon}</i>${p.label}<small>⏱️ ${toAr(Math.round(p.sec/60*10)/10)} دقيقة</small></button>`).join("")}
+          <div class="card rv tbox" style="--i:5"></div>
+        </div>
+        <div class="row c rv" style="--i:6"><button class="btn teal abtn">${d.answerBtn}</button></div>
+        <div class="cmp hidden-step">${d.answer.map(a=>`<div class="col card"><h4>${a.title}</h4><ul>${a.points.map(p=>`<li>${p}</li>`).join("")}</ul></div>`).join("")}</div>
+      </div>`,
+    init:(el,d) => {
+      const t = new Timer($(".tbox",el), d.phases[0].sec);
+      $$(".phase",el).forEach(p => p.onclick = () => {
+        $$(".phase",el).forEach(x=>x.classList.remove("on")); p.classList.add("on");
+        t.set(+p.dataset.s); t.start(); Sound.pop();
+      });
+      $(".abtn",el).onclick = () => { const c=$(".cmp",el); c.classList.add("show"); Sound.pop(); };
+    }
+  },
+
+  /* ---------- لعبة الترتيب ---------- */
+  order:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="row rv" style="--i:1"><p class="lead" style="flex:1">${d.question}</p><button class="btn sm ghost resetO">↺ إعادة</button></div>
+        <div class="slots rv" style="--i:2">${d.steps.map((s,i)=>`${i?'<span class="arrow">←</span>':""}<div class="slot"><span class="sn">${toAr(i+1)}</span><span class="sl"></span><span class="sd"></span></div>`).join("")}</div>
+        <div class="feedback ofb"></div>
+        <div class="pool rv" style="--i:3"></div>
+      </div>`,
+    init:(el,d) => {
+      const pool = $(".pool",el), slots = $$(".slot",el), fb = $(".ofb",el);
+      let next = 0;
+      const build = () => {
+        next = 0; fb.innerHTML = "";
+        slots.forEach(s=>{ s.classList.remove("fill"); $(".sl",s).textContent=""; $(".sd",s).textContent=""; });
+        let order = shuffle(d.steps.map((_,i)=>i));
+        while(order.every((v,i)=>v===i) && d.steps.length>1) order = shuffle(order);
+        pool.innerHTML = order.map(i=>`<button data-i="${i}">${d.steps[i].icon} ${d.steps[i].label}</button>`).join("");
+        $$("button",pool).forEach(b => b.onclick = () => {
+          const i = +b.dataset.i;
+          if(i === next){
+            const s = slots[next]; s.classList.add("fill");
+            $(".sl",s).textContent = d.steps[i].icon + " " + d.steps[i].label;
+            $(".sd",s).textContent = d.steps[i].desc || "";
+            b.classList.add("used"); next++; Sound.pop(); fb.innerHTML = "";
+            if(next === d.steps.length){ fb.innerHTML = `<span class="ok">أحسنتِ! 👏 ترتيب صحيح</span>`; celebrate(fb); }
+          } else {
+            b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); Sound.wrong();
+            fb.innerHTML = `<span class="no">حاولي مرة أخرى 💜 ما المرحلة رقم ${toAr(next+1)}؟</span>`;
+          }
+        });
+      };
+      $(".resetO",el).onclick = build; build();
+    }
+  },
+
+  /* ---------- اختيار من متعدد ---------- */
+  mcq:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="mcq-q card rv" style="--i:1">${d.icon?`<span class="qi float">${d.icon}</span>`:""}<span>${d.question}</span></div>
+        <div class="opts">${d.options.map((o,i)=>`
+          <button class="opt rv" style="--i:${i+2}" data-i="${i}"><span class="oi">${o.icon||LETTERS[i]}</span><span>${o.text}</span></button>`).join("")}
+        </div>
+        <div class="feedback mfb"></div>
+        ${d.explain?`<div class="explain hidden-step">${d.explain}</div>`:""}
+      </div>`,
+    init:(el,d) => {
+      const fb = $(".mfb",el);
+      let solved = false;
+      $$(".opt",el).forEach(o => o.onclick = () => {
+        if(solved) return;
+        if(+o.dataset.i === d.correct){
+          solved = true; o.classList.add("right");
+          fb.innerHTML = `<span class="ok">أحسنتِ! 👏 إجابة صحيحة</span>`;
+          const ex = $(".explain",el); if(ex) ex.classList.add("show");
+          celebrate(o);
+        } else {
+          o.classList.add("wrong"); o.classList.remove("shake"); void o.offsetWidth; o.classList.add("shake");
+          fb.innerHTML = `<span class="no">حاولي مرة أخرى 💜</span>`; Sound.wrong();
+        }
+      });
+    }
+  },
+
+  /* ---------- صح أم خطأ ---------- */
+  tf:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="tf-list">${d.items.map((it,i)=>`
+          <div class="tf card rv" style="--i:${i+1}" data-a="${it.answer}">
+            <div><span class="tt">${toAr(i+1)}. ${it.text}</span>${it.fix?`<span class="fix hidden-step">✏️ التصحيح: ${it.fix}</span>`:""}</div>
+            <div class="tb"><button class="t" data-v="true">✔ صح</button><button class="f" data-v="false">✖ خطأ</button></div>
+          </div>`).join("")}
+        </div>
+        <div class="feedback tfb"></div>
+      </div>`,
+    init:(el,d) => {
+      let score = 0; const rows = $$(".tf",el);
+      rows.forEach(r => $$(".tb button",r).forEach(b => b.onclick = () => {
+        if(r.classList.contains("ok")) return;
+        if(b.dataset.v === r.dataset.a){
+          r.classList.add("ok"); b.classList.add("sel"); Sound.pop(); score++;
+          const fx = $(".fix",r); if(fx) fx.classList.add("show");
+          if(score === rows.length){ $(".tfb",el).innerHTML = `<span class="ok">أحسنتِ! 👏 أجبتِ عن جميع العبارات</span>`; celebrate($(".tfb",el)); }
+        } else {
+          b.classList.add("x"); r.classList.remove("shake"); void r.offsetWidth; r.classList.add("shake"); Sound.wrong();
+          $(".tfb",el).innerHTML = `<span class="no">حاولي مرة أخرى 💜</span>`;
+          setTimeout(()=>b.classList.remove("x"),700);
+        }
+      }));
+    }
+  },
+
+  /* ---------- العصف الذهني ---------- */
+  brainstorm:{
+    html:d => `${head(d)}
+      <div class="body">
+        <div class="storm rv" style="--i:1"><div class="storm-center">${d.center}</div></div>
+        <div class="storm-in rv" style="--i:2">
+          <input type="text" placeholder="${d.placeholder}" maxlength="34">
+          <button class="btn addI">➕ أضيفي</button>
+          <button class="btn teal seedI">${d.seedBtn}</button>
+          <button class="btn sm ghost clrI">↺</button>
+        </div>
+      </div>`,
+    init:(el,d) => {
+      const area = $(".storm",el), inp = $("input",el);
+      let n = 0, seedK = 0;
+      // أماكن الأفكار: عمودان على الجانبين + أعلى وأسفل الفكرة المركزية
+      const SLOTS = [[84,12],[16,12],[84,31],[16,31],[84,50],[16,50],[84,69],[16,69],[84,88],[16,88],[50,9],[50,91]];
+      const place = () => {
+        const W = area.clientWidth || 1420, H = area.clientHeight || 520;
+        const [px,py] = SLOTS[n % SLOTS.length], ring = Math.floor(n / SLOTS.length);
+        n++;
+        return [W*px/100 + (px<50? ring*30 : -ring*30), H*py/100 + ring*14];
+      };
+      const add = (txt, book=false) => {
+        if(!txt.trim()) return;
+        const [x,y] = place();
+        const s = document.createElement("div");
+        s.className = "idea" + (book?" book":""); s.textContent = txt;
+        s.style.left = x+"px"; s.style.top = y+"px";
+        area.appendChild(s); Sound.pop();
+      };
+      $(".addI",el).onclick = () => { add(inp.value); inp.value=""; inp.focus(); };
+      inp.addEventListener("keydown", e => { if(e.key==="Enter"){ add(inp.value); inp.value=""; } e.stopPropagation(); });
+      $(".seedI",el).onclick = () => { if(seedK < d.seeds.length) add(d.seeds[seedK++], true); if(seedK===d.seeds.length) $(".seedI",el).disabled=true; };
+      $(".clrI",el).onclick = () => { $$(".idea",area).forEach(x=>x.remove()); n=0; seedK=0; $(".seedI",el).disabled=false; };
+    }
+  },
+
+  /* ---------- تحدي الدقيقة ---------- */
+  challenge:{
+    html:d => `${head(d)}
+      <div class="chal">
+        <div class="rv" style="--i:1"><div class="tbox"></div></div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div class="chal-task card rv" style="--i:2">${d.task}</div>
+          <div class="counter card rv" style="--i:3;padding:10px">
+            عدد الإجابات:
+            <button class="btn sm ghost cminus">−</button><span class="cn">٠</span><button class="btn sm cplus">+</button>
+          </div>
+          <div class="row rv" style="--i:4"><button class="btn teal ansB">${d.answersBtn}</button></div>
+          <div class="ans-grid">${d.answers.map(a=>`<span class="chip hidden-step">${a}</span>`).join("")}</div>
+        </div>
+      </div>`,
+    init:(el,d) => {
+      new Timer($(".tbox",el), d.seconds, true);
+      let c = 0; const cn = $(".cn",el);
+      $(".cplus",el).onclick = () => { c++; cn.textContent = toAr(c); Sound.pop(); };
+      $(".cminus",el).onclick = () => { c=Math.max(0,c-1); cn.textContent = toAr(c); };
+      $(".ansB",el).onclick = () => { $$(".ans-grid .chip",el).forEach((x,i)=>setTimeout(()=>{x.classList.add("show");Sound.pop();}, i*180)); };
+    }
+  },
+
+  /* ---------- التعلم التعاوني ---------- */
+  groups:{
+    html:d => `${head(d)}
+      <div class="body">
+        <p class="lead rv" style="--i:1">${d.scenario}</p>
+        <div class="groups">${d.groups.map((g,i)=>`
+          <div class="grp card rv" style="--i:${i+2};--c:${g.color}"><i class="float" style="animation-delay:${i*.3}s">${g.icon}</i><h4>${g.name}</h4><p>${g.task}</p></div>`).join("")}
+        </div>
+        <div class="gfoot">
+          <div class="rv" style="--i:6"><p class="lead" style="font-weight:800;margin-bottom:10px">🤝 لماذا نعمل كفريق؟</p>
+            <div class="chips">${d.teamwork.map(t=>`<span class="chip">${t}</span>`).join("")}</div></div>
+          <div class="card rv tbox" style="--i:7"></div>
+        </div>
+      </div>`,
+    init:(el,d) => { new Timer($(".tbox",el), d.minutes*60); }
+  },
+
+  /* ---------- تطبيق عملي: بطاقة المشروع ---------- */
+  builder:{
+    html:d => `${head(d)}
+      <p class="lead rv" style="--i:1;margin-bottom:18px;font-size:27px">${d.scenario}</p>
+      <div class="builder">
+        <div class="fields">${d.fields.map((f,i)=>`
+          <label class="field rv" style="--i:${i+2}"><span>${f.icon} ${f.label}</span><input data-k="${f.key}" placeholder="${f.ph}" maxlength="40"></label>`).join("")}
+          <div class="row rv" style="--i:8"><button class="btn apB">${d.approveBtn}</button><button class="btn sm ghost rsB">↺ مسح</button></div>
+        </div>
+        <div class="pcard card rv" style="--i:3">
+          <h3 class="pv-name">📁 اسم المشروع</h3>
+          <div class="pstats">
+            <div class="pstat"><i>🎯</i><b>النطاق</b><span class="pv-scope">…</span></div>
+            <div class="pstat"><i>⏰</i><b>الزمن</b><span class="pv-time">…</span></div>
+            <div class="pstat"><i>💰</i><b>التكلفة</b><span class="pv-cost">…</span></div>
+          </div>
+          <div class="center" style="font-size:22px;font-weight:800;color:var(--mut)">👥 أصحاب المصلحة</div>
+          <div class="stk pv-stake"></div>
+          <div class="stamp">✅ تم اعتماد خطة المشروع — أحسنتِ!</div>
+        </div>
+      </div>`,
+    init:(el) => {
+      const card = $(".pcard",el);
+      const upd = () => {
+        const v = k => ($(`input[data-k="${k}"]`,el)||{}).value || "";
+        $(".pv-name",el).textContent = "📁 " + (v("name") || "اسم المشروع");
+        $(".pv-scope",el).textContent = v("scope") || "…";
+        $(".pv-time",el).textContent  = v("time")  || "…";
+        $(".pv-cost",el).textContent  = v("cost")  || "…";
+        $(".pv-stake",el).innerHTML = v("stake").split(/[،,]/).map(s=>s.trim()).filter(Boolean).map(s=>`<span class="chip">${s}</span>`).join("");
+        card.classList.remove("approved");
+      };
+      $$("input",el).forEach(i => { i.oninput = upd; i.addEventListener("keydown", e => e.stopPropagation()); });
+      $(".apB",el).onclick = () => { card.classList.add("approved"); celebrate(card); FX.message("خطة رائعة! 👏"); };
+      $(".rsB",el).onclick = () => { $$("input",el).forEach(i=>i.value=""); upd(); };
+    }
+  },
+
+  /* ---------- المراجعة (خريطة ذهنية) ---------- */
+  review:{
+    html:d => {
+      const half = Math.ceil(d.branches.length/2);
+      const br = (b,i) => `<button class="branch card rv" style="--i:${i+2}"><div class="bh"><span>${b.icon}</span>${b.label}</div><div class="bp">${b.points}</div></button>`;
+      return `${head(d)}
+      <div class="mind">
+        <div class="mcol">${d.branches.slice(0,half).map((b,i)=>br(b,i)).join("")}</div>
+        <div class="mcore rv" style="--i:1">${d.center}</div>
+        <div class="mcol">${d.branches.slice(half).map((b,i)=>br(b,i+half)).join("")}</div>
+      </div>
+      <div class="row c"><button class="btn sm ghost allR">👁️ إظهار الكل</button></div>`;
+    },
+    init:(el) => {
+      $$(".branch",el).forEach(b => b.onclick = () => { b.classList.toggle("open"); Sound.pop(); });
+      $(".allR",el).onclick = () => $$(".branch",el).forEach(b=>b.classList.add("open"));
+    }
+  },
+
+  /* ---------- التقييم الفوري ---------- */
+  exit:{
+    html:d => `${head(d)}
+      <div class="exit">
+        <div class="votes card rv" style="--i:1">
+          <p class="lead muted" style="margin:0 0 6px;font-size:24px">اضغطي على الوجه عدد الطالبات الرافعات أيديهن ✋</p>
+          ${d.levels.map(l=>`<button class="vote"><span class="ve">${l.emoji}</span><span class="vl">${l.label}</span><div class="bartrack"><div class="barfill" style="width:0;background:linear-gradient(90deg,var(--p2),var(--p))"></div></div><span class="vc">٠</span></button>`).join("")}
+          <div class="row"><button class="btn sm ghost rsV">↺ تصفير</button></div>
+        </div>
+        <div class="ticket card rv" style="--i:2"><h3>${d.ticket.title}</h3>${d.ticket.items.map(t=>`<div>${t}</div>`).join("")}</div>
+      </div>`,
+    init:(el) => {
+      const votes = $$(".vote",el); const counts = votes.map(()=>0);
+      const draw = () => { const mx = Math.max(1,...counts);
+        votes.forEach((v,i)=>{ $(".vc",v).textContent = toAr(counts[i]); $(".barfill",v).style.width = (counts[i]/mx*100)+"%"; }); };
+      votes.forEach((v,i) => v.onclick = () => { counts[i]++; draw(); Sound.pop(); });
+      $(".rsV",el).onclick = () => { counts.fill(0); draw(); };
+    }
+  },
+
+  /* ---------- الختام ---------- */
+  closing:{
+    html:d => `
+      <div class="closing">
+        <div class="trophy rv" style="--i:0">${d.emoji}</div>
+        <h1 class="rv" style="--i:1">${d.title}</h1>
+        <p class="rv" style="--i:2">${d.message}</p>
+        <div class="note rv" style="--i:3">${d.homework}</div>
+        <button class="btn rv clapBig" style="--i:4;font-size:30px;background:linear-gradient(135deg,var(--am),#F97316);box-shadow:0 7px 0 #B45309">${d.clapHint}</button>
+      </div>`,
+    init:(el) => { $(".clapBig",el).onclick = () => { clap(); FX.confetti(800,300,90); }; }
+  }
+};
+
+/* ==========================================================================
+   🧭 نظام التنقل بين الشرائح
+   ========================================================================== */
+const holder = $("#slides");
+const slidesEls = SLIDES.map((d, i) => {
+  const s = document.createElement("section");
+  s.className = "slide"; s.dataset.anim = d.anim || "fade"; s.dataset.dir = "next";
+  const T = TYPES[d.type];
+  s.innerHTML = T ? T.html(d) : `<h2>نوع غير معروف: ${d.type}</h2>`;
+  holder.appendChild(s);
+  if(T && T.init) T.init(s, d);
+  return s;
+});
+const N = slidesEls.length;
+let cur = -1;
+
+function go(i){
+  if(i < 0 || i >= N || i === cur) return;
+  const dir = i > cur ? "next" : "prev";
+  if(cur >= 0){
+    const old = slidesEls[cur];
+    old.classList.remove("active"); old.classList.add("leaving");
+    setTimeout(()=>old.classList.remove("leaving"), 460);
+  }
+  const s = slidesEls[i];
+  s.dataset.dir = dir;
+  s.classList.remove("leaving");
+  void s.offsetWidth;                 // إعادة تشغيل الحركات
+  s.classList.add("active");
+  cur = i;
+  $("#count").textContent = `${toAr(cur+1)} / ${toAr(N)}`;
+  $("#progress").style.width = ((cur+1)/N*100) + "%";
+  try{ history.replaceState(null, "", "#" + (cur+1)); }catch(e){}
+}
+const next = () => go(cur + 1);
+const prev = () => go(cur - 1);
+
+/* أزرار الشريط */
+$("#nextBtn").onclick = next;
+$("#prevBtn").onclick = prev;
+$("#clapBtn").onclick = clap;
+$("#fsBtn").onclick = toggleFS;
+function toggleFS(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(()=>{});
+  else document.exitFullscreen?.();
+}
+
+/* لوحة المفاتيح */
+document.addEventListener("keydown", e => {
+  const tgt = e.target;
+  if(tgt && (tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA")){
+    if(e.key === "Escape") tgt.blur();
+    return;                                 // لا نتدخل أثناء الكتابة
+  }
+  Sound.init();
+  switch(true){
+    case e.key === "ArrowRight" || e.key === " " || e.code === "Space" || e.key === "PageDown":
+      e.preventDefault(); next(); break;
+    case e.key === "ArrowLeft" || e.key === "PageUp":
+      e.preventDefault(); prev(); break;
+    case e.key === "Home": e.preventDefault(); go(0); break;
+    case e.key === "End":  e.preventDefault(); go(N-1); break;
+    case e.key === "ت" || e.code === "KeyJ":      // حرف ت (نفس زر J في لوحة المفاتيح)
+      e.preventDefault(); clap(); break;
+    case e.key === "f" || e.key === "F" || e.key === "ب":
+      e.preventDefault(); toggleFS(); break;
+    case e.key === "ArrowUp" || e.key === "ArrowDown":
+      e.preventDefault(); break;
+  }
+  showBar();
+});
+
+/* إلغاء التركيز عن الأزرار بعد الضغط حتى لا يضغطها Space مرة أخرى */
+document.addEventListener("click", e => { Sound.init(); const b = e.target.closest("button"); if(b) b.blur(); });
+/* منع أي تمرير بعجلة الفأرة أو اللمس */
+window.addEventListener("wheel", e => e.preventDefault(), {passive:false});
+document.addEventListener("touchmove", e => { if(!e.target.closest("input")) e.preventDefault(); }, {passive:false});
+
+/* إخفاء شريط التحكم تلقائيًا عند عدم تحريك الماوس */
+let idleT;
+function showBar(){
+  document.body.classList.remove("idle");
+  clearTimeout(idleT);
+  idleT = setTimeout(()=>{ if(!$("#bar").matches(":hover")) document.body.classList.add("idle"); }, 1800);
+}
+["mousemove","pointerdown","touchstart"].forEach(ev => document.addEventListener(ev, showBar, {passive:true}));
+
+/* ملاءمة المسرح (16:9) لحجم الشاشة دون تمرير */
+function fit(){
+  SCALE = Math.min(window.innerWidth/1600, window.innerHeight/900);
+  $("#stage").style.transform = `translate(-50%,-50%) scale(${SCALE})`;
+}
+window.addEventListener("resize", fit);
+/* إعادة أي إزاحة داخلية للصفر (مثلاً عند التركيز على حقل كتابة) */
+document.addEventListener("scroll", e => { const t = e.target; if(t && t.scrollTop !== undefined){ t.scrollTop = 0; t.scrollLeft = 0; } }, true);
+
+/* التشغيل */
+FX.el = $("#fx");
+fit();
+const start = parseInt((location.hash||"").slice(1)) || 1;
+go(Math.min(Math.max(start,1),N) - 1);
+showBar();
+</script>
+<!-- منصة الكتاب: لوحة المعلمة (العودة للفهرس، حالة الشرح، الدرس السابق/التالي) -->
+<link rel="stylesheet" href="../css/shared.css">
+<script src="../js/cloud-config.js"></script>
+<script src="../js/cloud-sync.js"></script>
+<script src="../js/lesson-data.js"></script>
+<script src="../js/progress-manager.js"></script>
+<script src="../js/classroom-manager.js"></script>
+<script src="../js/shared.js" data-lesson="lesson-01"></script>
+<script src="../js/lesson-toolkit.js"></script>
+</body>
+</html>
